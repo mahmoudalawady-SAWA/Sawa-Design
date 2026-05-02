@@ -7,52 +7,54 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/ag-psd/dist/bundle.js"></script>
-    <!-- استدعاء خطوط جوجل العربية -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&family=Almarai:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #f0fdf4; }
+        body { font-family: 'Cairo', sans-serif; background-color: #f9fafb; }
         .font-tajawal { font-family: 'Tajawal', sans-serif; }
         .font-almarai { font-family: 'Almarai', sans-serif; }
         .font-amiri { font-family: 'Amiri', serif; }
         
         #previewCanvas {
             max-width: 100%; height: auto; border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            display: none; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            display: none; 
+            background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
             background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            touch-action: none; cursor: default;
         }
         
-        /* تصميم التبويبات (Accordion) */
         .accordion-content { transition: max-height 0.3s ease-out; overflow: hidden; max-height: 0; }
-        .accordion-content.open { max-height: 1000px; /* رقم كبير يكفي للمحتوى */ }
+        .accordion-content.open { max-height: 2500px; }
         
-        /* التمرير المخصص للطبقات */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #fef2f2; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #fca5a5; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #ef4444; }
+
+        #projectsModal { display: none; }
+        #projectsModal.active { display: flex; }
+
+        /* تنسيق أزرار الرسم */
+        .tool-btn.active { background-color: #ef4444; color: white; border-color: #dc2626; }
     </style>
 </head>
-<body class="min-h-screen p-2 md:p-6">
+<body class="min-h-screen p-2 md:p-6 flex flex-col justify-between">
 
-    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-        <!-- الترويسة العلوية -->
-        <div class="bg-gradient-to-l from-green-600 to-blue-600 text-white p-4 md:p-6 text-center relative flex flex-col md:flex-row items-center justify-between">
-            <div class="flex items-center gap-4 mb-4 md:mb-0">
-                <img src="SAWA LOGO.png" alt="شعار سوا" class="h-16 object-contain bg-white rounded-xl p-2 shadow-md" onerror="this.style.display='none'">
+    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200 w-full mb-8">
+        
+        <div class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 relative flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center justify-center gap-4">
+                <img src="SAWA LOGO.png" alt="شعار سوا" class="h-20 md:h-24 object-contain bg-white/10 backdrop-blur-sm rounded-xl p-2 shadow-lg border border-white/20">
                 <div class="text-right">
-                    <h1 class="text-2xl md:text-3xl font-bold">صمم بنفسك مع سوا</h1>
-                    <p class="text-blue-100 text-sm mt-1">المساحة الإبداعية المتكاملة للتصميم</p>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-1">صمم بنفسك مع سوا</h1>
+                    <p class="text-emerald-100 text-sm md:text-base font-semibold">المساحة الإبداعية المتكاملة للتصميم</p>
                 </div>
             </div>
-            
-            <div class="flex gap-2 text-sm flex-wrap justify-center">
-                <button id="saveDraftBtn" class="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1 backdrop-blur-sm">
-                    💾 حفظ كمسودة
-                </button>
-                <button id="loadDraftBtn" class="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1 backdrop-blur-sm">
-                    📂 استعادة مسودة
+            <div class="mt-4 md:mt-0 flex gap-2">
+                <button id="openProjectsBtn" class="bg-white text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm">
+                    📁 مشاريعي المحفوظة
                 </button>
             </div>
         </div>
@@ -63,125 +65,172 @@
             <div class="lg:col-span-4 space-y-4">
                 
                 <!-- تبويب 1: إعداد الخلفية -->
-                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                    <button class="w-full bg-gray-50 p-4 text-right font-bold text-gray-800 flex justify-between items-center hover:bg-gray-100" onclick="toggleAccordion('bgSetup')">
-                        <span>1. إعداد مساحة العمل (الخلفية)</span>
-                        <svg class="w-5 h-5 transition-transform" id="icon-bgSetup" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <div class="border border-red-100 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <button class="w-full bg-red-50 p-4 text-right font-bold text-red-900 flex justify-between items-center hover:bg-red-100 transition" onclick="toggleAccordion('bgSetup')">
+                        <span class="flex items-center gap-2"><span class="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span> إعداد مساحة العمل والملفات</span>
+                        <svg class="w-5 h-5 transition-transform text-red-600" id="icon-bgSetup" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
-                    <div id="bgSetup" class="accordion-content open px-4 py-4 space-y-4 border-t border-gray-100">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">رفع صورة خلفية للتعديل عليها:</label>
-                            <input type="file" id="imageUpload" accept="image/*" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-                        </div>
-                        <div class="flex items-center my-2"><hr class="flex-grow border-gray-200"><span class="px-2 text-xs text-gray-400">أو تصميم فارغ</span><hr class="flex-grow border-gray-200"></div>
+                    <div id="bgSetup" class="accordion-content open px-4 py-4 space-y-4 border-t border-red-100">
                         <div class="grid grid-cols-2 gap-2">
-                            <select id="presetSizes" class="p-2 border border-gray-300 rounded text-xs focus:ring-1">
-                                <option value="">-- مقاس جاهز --</option>
-                                <option value="1080x1080">بوست انستجرام</option>
-                                <option value="1080x1920">ستوري</option>
-                                <option value="2480x3508">ورقة A4</option>
-                            </select>
-                            <div class="flex gap-1 items-center">
-                                <input type="number" id="customW" placeholder="عرض" class="w-full p-2 border border-gray-300 rounded text-xs">
-                                <span>x</span>
-                                <input type="number" id="customH" placeholder="طول" class="w-full p-2 border border-gray-300 rounded text-xs">
+                            <div class="bg-gray-50 p-2 rounded border border-gray-200 text-center">
+                                <label class="block text-xs font-bold text-gray-700 cursor-pointer hover:text-red-600">
+                                    🖼️ رفع صورة خلفية
+                                    <input type="file" id="imageUpload" accept="image/*" class="hidden"/>
+                                </label>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded border border-gray-200 text-center">
+                                <label class="block text-xs font-bold text-gray-700 cursor-pointer hover:text-purple-600">
+                                    <span id="psdImportText">🗂️ استيراد ملف PSD</span>
+                                    <input type="file" id="psdImportInput" accept=".psd" class="hidden"/>
+                                </label>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <input type="color" id="bgColor" value="#ffffff" class="h-8 w-1/3 rounded cursor-pointer border border-gray-300">
-                            <button id="createBlankBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded transition">إنشاء مساحة</button>
+
+                        <div class="flex items-center my-2"><hr class="flex-grow border-red-100"><span class="px-2 text-xs text-red-500 font-bold">أو مساحة عمل جديدة</span><hr class="flex-grow border-red-100"></div>
+                        
+                        <div class="space-y-3">
+                            <select id="presetSizes" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                <option value="">-- اختر مقاس جاهز --</option>
+                                <option value="2480x3508">ورقة A4 (جودة طباعة)</option>
+                                <option value="1748x2480">ورقة A5 (جودة طباعة)</option>
+                                <option value="1063x591">كارت شخصي 9×5 سم (طباعة)</option>
+                                <option value="1080x1080">بوست انستجرام / فيسبوك مربع</option>
+                                <option value="1200x630">بوست فيسبوك (أفقي)</option>
+                                <option value="1080x1920">ستوري (سناب/انستجرام)</option>
+                                <option value="2560x1440">غلاف يوتيوب</option>
+                            </select>
+                            <div class="flex gap-2 items-center">
+                                <input type="number" id="customW" placeholder="العرض (سم)" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                                <span class="text-gray-400">×</span>
+                                <input type="number" id="customH" placeholder="الطول (سم)" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <div class="flex items-center justify-between mt-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs text-gray-600 font-bold">لون الخلفية:</label>
+                                    <input type="color" id="bgColor" value="#ffffff" class="h-8 w-12 rounded cursor-pointer border border-gray-300">
+                                </div>
+                                <button id="createBlankBtn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded-lg shadow transition">إنشاء التصميم</button>
+                            </div>
                         </div>
 
-                        <!-- فلاتر الخلفية -->
                         <div id="bgFiltersPanel" class="hidden mt-3 pt-3 border-t border-gray-100">
-                            <label class="block text-xs font-semibold text-gray-600 mb-2">فلاتر الصورة الخلفية:</label>
-                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div>السطوع <input type="range" id="bgBrightness" min="0" max="200" value="100" class="w-full h-1 bg-gray-200 rounded"></div>
-                                <div>التباين <input type="range" id="bgContrast" min="0" max="200" value="100" class="w-full h-1 bg-gray-200 rounded"></div>
-                                <div>التشبع <input type="range" id="bgSaturation" min="0" max="200" value="100" class="w-full h-1 bg-gray-200 rounded"></div>
-                                <div>تمويه (Blur) <input type="range" id="bgBlur" min="0" max="20" value="0" class="w-full h-1 bg-gray-200 rounded"></div>
+                            <label class="block text-xs font-bold text-gray-700 mb-2">فلاتر الخلفية:</label>
+                            <div class="grid grid-cols-2 gap-3 text-xs text-gray-600">
+                                <div>السطوع <input type="range" id="bgBrightness" min="0" max="200" value="100" class="w-full h-1 bg-red-200 rounded outline-none accent-red-600 mt-1"></div>
+                                <div>التباين <input type="range" id="bgContrast" min="0" max="200" value="100" class="w-full h-1 bg-red-200 rounded outline-none accent-red-600 mt-1"></div>
+                                <div>التشبع <input type="range" id="bgSaturation" min="0" max="200" value="100" class="w-full h-1 bg-red-200 rounded outline-none accent-red-600 mt-1"></div>
+                                <div>تمويه (Blur) <input type="range" id="bgBlur" min="0" max="20" value="0" class="w-full h-1 bg-red-200 rounded outline-none accent-red-600 mt-1"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- تبويب 2: إضافة عناصر -->
-                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                    <button class="w-full bg-gray-50 p-4 text-right font-bold text-gray-800 flex justify-between items-center hover:bg-gray-100" onclick="toggleAccordion('addElements')">
-                        <span>2. إضافة عناصر للتصميم (+)</span>
-                        <svg class="w-5 h-5 transition-transform" id="icon-addElements" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <div class="border border-red-100 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <button class="w-full bg-red-50 p-4 text-right font-bold text-red-900 flex justify-between items-center hover:bg-red-100 transition" onclick="toggleAccordion('addElements')">
+                        <span class="flex items-center gap-2"><span class="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span> أدوات التصميم والإضافة</span>
+                        <svg class="w-5 h-5 transition-transform text-red-600" id="icon-addElements" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
-                    <div id="addElements" class="accordion-content px-4 py-4 space-y-4 border-t border-gray-100">
-                        <div class="grid grid-cols-2 gap-2">
-                            <button id="addTextBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ نص</button>
-                            <button id="addImageBtn" class="bg-green-100 hover:bg-green-200 text-green-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ صورة</button>
-                            <button id="addRectBtn" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ مربع</button>
-                            <button id="addCircleBtn" class="bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ دائرة</button>
-                        </div>
-                        <input type="file" id="newImageUpload" accept="image/*" class="hidden">
+                    <div id="addElements" class="accordion-content px-4 py-4 space-y-4 border-t border-red-100">
                         
-                        <!-- مساعد الذكاء الاصطناعي -->
-                        <div class="mt-2 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
-                            <label class="block text-xs font-bold text-purple-800 mb-2">✨ مساعد الذكاء الاصطناعي</label>
-                            <textarea id="aiPrompt" rows="1" placeholder="اكتب ما تريد توليده (نص إعلاني، صورة...)" class="w-full p-2 border border-purple-200 rounded text-xs focus:ring-1 focus:ring-purple-400 mb-2"></textarea>
+                        <!-- الرسم والمسح -->
+                        <div class="border border-gray-200 rounded-lg p-2 bg-gray-50 flex gap-2">
+                            <button id="drawBrushBtn" class="tool-btn flex-1 bg-white border border-gray-300 rounded py-1.5 text-xs font-bold shadow-sm transition disabled:opacity-50" disabled>🖌️ فرشاة رسم</button>
+                            <button id="drawEraserBtn" class="tool-btn flex-1 bg-white border border-gray-300 rounded py-1.5 text-xs font-bold shadow-sm transition disabled:opacity-50" disabled>🧽 ممحاة</button>
+                            <input type="color" id="brushColor" value="#dc2626" class="w-8 h-8 rounded border border-gray-300 p-0 m-0 cursor-pointer" title="لون الفرشاة">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="addTextBtn" class="bg-red-100 hover:bg-red-200 text-red-800 font-bold py-2 rounded-lg text-sm transition disabled:opacity-50" disabled>📝 إضافة نص</button>
+                            <button id="addImageBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 rounded-lg text-sm transition disabled:opacity-50" disabled>🖼️ إضافة صورة</button>
+                            <input type="file" id="newImageUpload" accept="image/*" class="hidden">
+                        </div>
+                        
+                        <!-- إيموجي -->
+                        <div class="border border-gray-200 rounded-lg p-2">
+                            <p class="text-xs text-gray-600 font-bold mb-2">إيموجي سريعة:</p>
+                            <div id="emojiContainer" class="flex gap-2 flex-wrap text-xl cursor-pointer">
+                                <!-- سيتم تعبئتها بالجافاسكريبت -->
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                            <p class="text-xs text-gray-600 font-bold mb-2">أشكال هندسية:</p>
+                            <div class="grid grid-cols-4 gap-2">
+                                <button id="addRectBtn" class="bg-white border border-gray-200 rounded py-1 text-lg shadow-sm hover:border-red-400 disabled:opacity-50" disabled>🟦</button>
+                                <button id="addCircleBtn" class="bg-white border border-gray-200 rounded py-1 text-lg shadow-sm hover:border-red-400 disabled:opacity-50" disabled>🔵</button>
+                                <button id="addTriangleBtn" class="bg-white border border-gray-200 rounded py-1 text-lg shadow-sm hover:border-red-400 disabled:opacity-50" disabled>🔺</button>
+                                <button id="addLineBtn" class="bg-white border border-gray-200 rounded py-1 text-lg font-bold shadow-sm hover:border-red-400 disabled:opacity-50" disabled>➖</button>
+                            </div>
+                        </div>
+
+                        <!-- المساعد الذكي -->
+                        <div class="p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200">
+                            <label class="block text-xs font-bold text-red-800 mb-2">✨ المساعد الذكي</label>
+                            <textarea id="aiPrompt" rows="2" placeholder="اكتب ما تريد توليده (نص إعلاني، صورة...)" class="w-full p-2 border border-red-200 rounded text-xs focus:ring-1 focus:ring-red-400 mb-2"></textarea>
                             <div class="flex gap-2">
-                                <button id="aiTextBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs py-1.5 rounded" disabled>توليد نص</button>
-                                <button id="aiImageBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs py-1.5 rounded" disabled>توليد صورة</button>
+                                <button id="aiTextBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2 rounded shadow disabled:opacity-50" disabled>توليد نص</button>
+                                <button id="aiImageBtn" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2 rounded shadow disabled:opacity-50" disabled>توليد صورة</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- تبويب 3: خصائص العنصر المحدد -->
-                <div class="border border-blue-200 rounded-xl overflow-hidden bg-blue-50 shadow-sm transition-opacity duration-300 opacity-50" id="propertiesWrapper">
-                    <button class="w-full bg-blue-100 p-3 text-right font-bold text-blue-900 flex justify-between items-center" onclick="toggleAccordion('elementProps')">
-                        <span>3. خصائص العنصر المحدد</span>
+                <!-- تبويب 3: خصائص العنصر -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm transition-opacity duration-300 opacity-50" id="propertiesWrapper">
+                    <button class="w-full bg-gray-100 p-4 text-right font-bold text-gray-800 flex justify-between items-center hover:bg-gray-200" onclick="toggleAccordion('elementProps')">
+                        <span class="flex items-center gap-2"><span class="bg-gray-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span> خصائص العنصر المحدد</span>
                         <svg class="w-5 h-5 transition-transform" id="icon-elementProps" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
-                    <div id="elementProps" class="accordion-content open px-4 py-4 space-y-3 border-t border-blue-200 pointer-events-none">
+                    <div id="elementProps" class="accordion-content px-4 py-4 space-y-4 border-t border-gray-200 pointer-events-none bg-gray-50">
                         
-                        <div id="textOnlyProps" class="hidden space-y-2">
-                            <textarea id="elText" rows="2" class="w-full p-2 border rounded text-sm"></textarea>
-                            <div class="grid grid-cols-2 gap-2">
+                        <div id="textOnlyProps" class="hidden space-y-3">
+                            <textarea id="elText" rows="2" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500"></textarea>
+                            
+                            <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="text-xs text-gray-600">الخط:</label>
-                                    <select id="elFont" class="w-full p-1.5 border rounded text-xs">
-                                        <option value="Cairo">Cairo (كايرو)</option>
-                                        <option value="Tajawal">Tajawal (تجوال)</option>
-                                        <option value="Almarai">Almarai (المراعي)</option>
-                                        <option value="Amiri">Amiri (أميري)</option>
-                                        <option value="Arial">Arial (عادي)</option>
-                                    </select>
+                                    <label class="text-xs font-bold text-gray-600 block mb-1">الخط والحجم:</label>
+                                    <div class="flex gap-1">
+                                        <select id="elFont" class="w-full p-1.5 border border-gray-300 rounded text-xs">
+                                            <option value="Cairo">Cairo (كايرو)</option>
+                                            <option value="Tajawal">Tajawal (تجوال)</option>
+                                            <option value="Almarai">Almarai (المراعي)</option>
+                                            <option value="Amiri">Amiri (أميري)</option>
+                                        </select>
+                                        <input type="number" id="elFontSize" class="w-16 p-1.5 border border-gray-300 rounded text-xs text-center" title="حجم الخط">
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="text-xs text-gray-600">اللون:</label>
-                                    <input type="color" id="elColor" class="w-full h-7 rounded cursor-pointer border">
+                                    <label class="text-xs font-bold text-gray-600 block mb-1">المحاذاة واللون:</label>
+                                    <div class="flex gap-1 h-8">
+                                        <button class="flex-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-100" id="alignRightBtn">يمين</button>
+                                        <button class="flex-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-100" id="alignCenterBtn">وسط</button>
+                                        <button class="flex-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-100" id="alignLeftBtn">يسار</button>
+                                        <input type="color" id="elColor" class="w-8 h-full rounded cursor-pointer border border-gray-300 p-0 m-0">
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="shapeOnlyProps" class="hidden grid grid-cols-2 gap-2">
-                            <div><label class="text-xs text-gray-600">لون التعبئة:</label><input type="color" id="elFill" class="w-full h-7 rounded border"></div>
-                            <div><label class="text-xs text-gray-600">لون الإطار:</label><input type="color" id="elStroke" class="w-full h-7 rounded border"></div>
-                            <div class="col-span-2"><label class="text-xs text-gray-600">سُمك الإطار:</label><input type="range" id="elStrokeW" min="0" max="50" class="w-full h-1 bg-gray-200 rounded"></div>
+                        <div id="shapeOnlyProps" class="hidden grid grid-cols-2 gap-3">
+                            <div><label class="text-xs font-bold text-gray-600 block mb-1">لون التعبئة:</label><input type="color" id="elFill" class="w-full h-8 rounded border border-gray-300 bg-white"></div>
+                            <div><label class="text-xs font-bold text-gray-600 block mb-1">لون الإطار:</label><input type="color" id="elStroke" class="w-full h-8 rounded border border-gray-300 bg-white"></div>
+                            <div class="col-span-2"><label class="text-xs font-bold text-gray-600 block mb-1">سُمك الإطار:</label><input type="range" id="elStrokeW" min="0" max="50" class="w-full h-1 bg-gray-300 rounded accent-red-600 mt-2"></div>
                         </div>
 
-                        <div id="imageFiltersProps" class="hidden space-y-2 border-t border-blue-200 pt-2 mt-2">
-                            <label class="text-xs font-semibold text-gray-700">فلاتر الصورة:</label>
+                        <div id="shadowProps" class="space-y-2 border-t border-gray-200 pt-3">
+                            <label class="text-xs font-bold text-gray-800 block">تأثير الظل (Shadow):</label>
                             <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div>سطوع <input type="range" id="elBright" min="0" max="200" value="100" class="w-full h-1"></div>
-                                <div>تباين <input type="range" id="elCont" min="0" max="200" value="100" class="w-full h-1"></div>
-                                <div class="col-span-2">تمويه (Blur) <input type="range" id="elBlur" min="0" max="20" value="0" class="w-full h-1"></div>
+                                <div class="flex items-center gap-1">اللون <input type="color" id="elShadowColor" value="#000000" class="w-6 h-6 border rounded"></div>
+                                <div class="flex items-center gap-1">التمويه <input type="range" id="elShadowBlur" min="0" max="50" value="0" class="flex-1 h-1 bg-gray-300 rounded accent-gray-600"></div>
                             </div>
                         </div>
 
-                        <div id="commonProps" class="space-y-2 border-t border-blue-200 pt-2 mt-2">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div><label class="text-xs text-gray-600">الحجم/العرض:</label><input type="range" id="elSize" min="10" max="1500" class="w-full h-1 bg-blue-200 rounded"></div>
-                                <div><label class="text-xs text-gray-600">الشفافية:</label><input type="range" id="elOpacity" min="0.1" max="1" step="0.1" class="w-full h-1 bg-blue-200 rounded"></div>
-                            </div>
-                            <div class="flex justify-end pt-2">
-                                <button id="deleteElBtn" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded text-xs font-bold">🗑️ حذف العنصر</button>
+                        <div id="commonProps" class="space-y-3 border-t border-gray-200 pt-3 mt-3">
+                            <div><label class="text-xs font-bold text-gray-600 block mb-1">الشفافية (Opacity):</label><input type="range" id="elOpacity" min="0.1" max="1" step="0.1" class="w-full h-1 bg-gray-300 rounded accent-red-600 mt-1"></div>
+                            <div class="flex justify-between items-center pt-2 gap-2">
+                                <button id="duplicateElBtn" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-xs font-bold transition">📋 تكرار (نسخ)</button>
+                                <button id="deleteElBtn" class="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded text-xs font-bold transition">🗑️ حذف</button>
                             </div>
                         </div>
 
@@ -189,14 +238,14 @@
                 </div>
 
                 <!-- تبويب 4: لوحة الطبقات (Layers) -->
-                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                    <button class="w-full bg-gray-50 p-4 text-right font-bold text-gray-800 flex justify-between items-center hover:bg-gray-100" onclick="toggleAccordion('layersPanel')">
-                        <span>4. إدارة الطبقات (Layers)</span>
-                        <svg class="w-5 h-5 transition-transform transform rotate-180" id="icon-layersPanel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <div class="border border-red-100 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <button class="w-full bg-red-50 p-4 text-right font-bold text-red-900 flex justify-between items-center hover:bg-red-100 transition" onclick="toggleAccordion('layersPanel')">
+                        <span class="flex items-center gap-2"><span class="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span> إدارة الطبقات</span>
+                        <svg class="w-5 h-5 transition-transform text-red-600" id="icon-layersPanel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
-                    <div id="layersPanel" class="accordion-content px-2 py-2 border-t border-gray-100 bg-gray-50 custom-scrollbar overflow-y-auto" style="max-height: 250px;">
+                    <div id="layersPanel" class="accordion-content px-2 py-2 border-t border-red-100 bg-gray-50 custom-scrollbar overflow-y-auto" style="max-height: 250px;">
                         <ul id="layersList" class="space-y-1">
-                            <li class="text-xs text-center text-gray-400 py-4">لا توجد عناصر مضافة بعد</li>
+                            <li class="text-xs text-center text-gray-400 py-4 font-semibold">لا توجد عناصر مضافة بعد</li>
                         </ul>
                     </div>
                 </div>
@@ -204,334 +253,457 @@
             </div>
 
             <!-- منطقة المعاينة (اليسار) -->
-            <div class="lg:col-span-8 space-y-4">
-                <!-- أشرطة الأدوات العلوية للمعاينة -->
-                <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                    <div class="flex gap-1">
-                        <button id="undoBtn" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-700 disabled:opacity-50" disabled title="تراجع"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
-                        <button id="redoBtn" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-700 disabled:opacity-50" disabled title="إعادة"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg></button>
+            <div class="lg:col-span-8 space-y-4 flex flex-col">
+                <div class="flex flex-wrap justify-between items-center bg-white p-3 rounded-xl shadow border border-red-100 gap-2">
+                    <div class="flex gap-1 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                        <button id="undoBtn" class="hover:bg-white hover:shadow p-1.5 rounded text-gray-700 disabled:opacity-50 transition" disabled title="تراجع"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
+                        <button id="redoBtn" class="hover:bg-white hover:shadow p-1.5 rounded text-gray-700 disabled:opacity-50 transition" disabled title="إعادة"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg></button>
                     </div>
-                    <div class="flex gap-2">
-                        <button id="psdBtn" class="bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 disabled:opacity-50" disabled>PSD</button>
-                        <button id="shareBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 disabled:opacity-50" disabled>مشاركة</button>
-                        <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-1.5 rounded-lg text-sm flex items-center gap-1 disabled:opacity-50 shadow-md" disabled>حفظ و تحميل</button>
+                    <div class="flex gap-2 flex-wrap flex-1 justify-end">
+                        <button id="shareBtn" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3 py-2 rounded-lg text-sm border border-blue-200 transition disabled:opacity-50" disabled>🌐 مشاركة</button>
+                        <button id="psdBtn" class="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-3 py-2 rounded-lg text-sm border border-purple-200 transition disabled:opacity-50" disabled>✨ PSD</button>
+                        <button id="pdfBtn" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold px-3 py-2 rounded-lg text-sm border border-orange-200 transition disabled:opacity-50" disabled>📄 PDF</button>
+                        <button id="downloadBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-md transition disabled:opacity-50" disabled>⬇️ حفظ الصورة</button>
                     </div>
                 </div>
 
-                <div class="bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[500px] p-2 relative overflow-hidden shadow-inner">
+                <div class="bg-white rounded-xl border-2 border-red-200 flex items-center justify-center flex-1 min-h-[500px] p-2 relative shadow-inner overflow-hidden">
                     <div id="placeholderText" class="text-gray-400 text-center">
-                        <svg class="h-16 w-16 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        <p class="text-sm">ابدأ بإعداد مساحة العمل من القائمة الجانبية</p>
+                        <svg class="h-16 w-16 mx-auto mb-4 opacity-20 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <p class="font-bold text-gray-500">مساحة التصميم فارغة</p>
                     </div>
-                    <canvas id="previewCanvas" style="touch-action: none; cursor: crosshair;"></canvas>
+                    <div class="relative max-w-full max-h-full flex items-center justify-center">
+                        <canvas id="previewCanvas"></canvas>
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 
+    <footer class="text-center pb-6 text-gray-600 font-bold leading-relaxed">
+        <p class="text-lg text-red-800">تم التصميم لراحتكم بواسطة</p>
+        <p class="text-xl text-red-600 bg-white inline-block px-4 py-1 rounded-full shadow-sm border border-red-100 my-2" dir="ltr">SAWA 01096367846</p>
+        <p class="text-sm">شركة سوا للدعاية والإعلان والطباعة المتكاملة</p>
+    </footer>
+
+    <!-- نافذة المشاريع المنبثقة -->
+    <div id="projectsModal" class="fixed inset-0 bg-black/50 z-50 items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-red-600 p-4 text-white flex justify-between items-center">
+                <h2 class="text-xl font-bold">مشاريعي المحفوظة</h2>
+                <button onclick="document.getElementById('projectsModal').classList.remove('active')" class="text-white hover:text-red-200 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <div class="p-4 border-b bg-gray-50 flex gap-2 items-center flex-wrap">
+                <input type="text" id="newProjectName" placeholder="اسم المشروع الجديد..." class="flex-1 p-2 border border-gray-300 rounded-lg text-sm outline-none">
+                <button id="saveUpdateProjectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow hidden">تحديث المشروع الحالي</button>
+                <button id="saveNewProjectBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow">حفظ كجديد</button>
+            </div>
+
+            <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
+                <div id="projectsList" class="grid gap-3"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // === وظائف واجهة المستخدم (Accordion) ===
+        // === واجهة المستخدم والتبويبات ===
         function toggleAccordion(id) {
             const content = document.getElementById(id);
             const icon = document.getElementById('icon-' + id);
             if (content.classList.contains('open')) {
-                content.classList.remove('open');
-                icon.classList.remove('rotate-180');
+                content.classList.remove('open'); if(icon) icon.classList.remove('rotate-180');
             } else {
-                content.classList.add('open');
-                icon.classList.add('rotate-180');
+                content.classList.add('open'); if(icon) icon.classList.add('rotate-180');
             }
         }
+        document.getElementById('layersPanel').classList.add('open'); document.getElementById('icon-layersPanel').classList.add('rotate-180');
 
-        // إغلاق التبويبات وفتحها افتراضياً
-        document.getElementById('addElements').classList.remove('open');
-        document.getElementById('layersPanel').classList.add('open');
+        // إدراج الإيموجي السريعة
+        const emojis = ['😀','😂','😍','🙏','👍','🔥','✨','🎉','🌟','💼','📞','📍'];
+        const emojiContainer = document.getElementById('emojiContainer');
+        emojis.forEach(em => {
+            const span = document.createElement('span'); span.textContent = em; span.className = 'hover:bg-gray-200 p-1 rounded transition';
+            span.onclick = () => { addElement('text'); elements[elements.length-1].text = em; updateUI(); updateCanvas(); };
+            emojiContainer.appendChild(span);
+        });
 
-        // === المتغيرات ===
+        // === المتغيرات الأساسية ===
         const canvas = document.getElementById('previewCanvas');
         const ctx = canvas.getContext('2d');
         
-        // الحالة الأساسية (State)
-        let elements = []; 
-        let selectedElement = null; 
-        let selectedFiles = [];
-        let currentPreviewImage = null;
-        let isBlankCanvas = false;
-        let canvasBgColor = '#ffffff';
+        let elements = []; let selectedElement = null; 
+        let currentPreviewImage = null; let isBlankCanvas = false; let canvasBgColor = '#ffffff';
         let bgFilters = { brightness: 100, contrast: 100, saturation: 100, blur: 0 };
         
-        let historyStack = [];
-        let redoStack = [];
-        let isDragging = false;
-        let isEditingInput = false;
-        let startX, startY;
-        const PIXELS_PER_CM = 118.11;
+        let historyStack = []; let redoStack = [];
+        
+        let interactionMode = 'none'; // drag, rotate, resize...
+        let startX, startY; let initialElState = null;
+        const HANDLE_SIZE = 12;
+        let isDrawingEngineActive = false;
 
-        // استدعاء عناصر الـ DOM
+        let activeDrawingMode = 'none'; // 'brush' or 'eraser'
+        let currentPath = null;
+        let currentProjectId = null; // لتتبع التحديث
+
+        const PIXELS_PER_CM = 118.11;
+        const WATERMARK_TEXT = "SAWA 01096367846";
+
         const els = {
-            imgUpload: document.getElementById('imageUpload'),
+            // القوائم والمساحة
+            imgUpload: document.getElementById('imageUpload'), psdImport: document.getElementById('psdImportInput'), psdImportText: document.getElementById('psdImportText'),
             presetSizes: document.getElementById('presetSizes'), customW: document.getElementById('customW'), customH: document.getElementById('customH'),
             bgColor: document.getElementById('bgColor'), createBlankBtn: document.getElementById('createBlankBtn'),
             bgBrightness: document.getElementById('bgBrightness'), bgContrast: document.getElementById('bgContrast'), bgSaturation: document.getElementById('bgSaturation'), bgBlur: document.getElementById('bgBlur'), bgFiltersPanel: document.getElementById('bgFiltersPanel'),
             
-            addText: document.getElementById('addTextBtn'), addImg: document.getElementById('addImageBtn'), addRect: document.getElementById('addRectBtn'), addCircle: document.getElementById('addCircleBtn'), newImgUpload: document.getElementById('newImageUpload'),
+            // الأدوات
+            addText: document.getElementById('addTextBtn'), addImg: document.getElementById('addImageBtn'), addRect: document.getElementById('addRectBtn'), addCircle: document.getElementById('addCircleBtn'), addTriangle: document.getElementById('addTriangleBtn'), addLine: document.getElementById('addLineBtn'), newImgUpload: document.getElementById('newImageUpload'),
             aiPrompt: document.getElementById('aiPrompt'), aiText: document.getElementById('aiTextBtn'), aiImg: document.getElementById('aiImageBtn'),
+            brushBtn: document.getElementById('drawBrushBtn'), eraserBtn: document.getElementById('drawEraserBtn'), brushColor: document.getElementById('brushColor'),
             
+            // الخصائص
             propsWrap: document.getElementById('propertiesWrapper'), propsContent: document.getElementById('elementProps'),
-            textProps: document.getElementById('textOnlyProps'), shapeProps: document.getElementById('shapeOnlyProps'), imgProps: document.getElementById('imageFiltersProps'), commonProps: document.getElementById('commonProps'),
-            
-            elText: document.getElementById('elText'), elFont: document.getElementById('elFont'), elColor: document.getElementById('elColor'),
+            textProps: document.getElementById('textOnlyProps'), shapeProps: document.getElementById('shapeOnlyProps'), imgProps: document.getElementById('imageFiltersProps'), commonProps: document.getElementById('commonProps'), shadowProps: document.getElementById('shadowProps'),
+            elText: document.getElementById('elText'), elFont: document.getElementById('elFont'), elFontSize: document.getElementById('elFontSize'), elColor: document.getElementById('elColor'),
+            elAlignR: document.getElementById('alignRightBtn'), elAlignC: document.getElementById('alignCenterBtn'), elAlignL: document.getElementById('alignLeftBtn'),
             elFill: document.getElementById('elFill'), elStroke: document.getElementById('elStroke'), elStrokeW: document.getElementById('elStrokeW'),
             elBright: document.getElementById('elBright'), elCont: document.getElementById('elCont'), elBlur: document.getElementById('elBlur'),
-            elSize: document.getElementById('elSize'), elOpacity: document.getElementById('elOpacity'), delBtn: document.getElementById('deleteElBtn'),
+            elShadowC: document.getElementById('elShadowColor'), elShadowB: document.getElementById('elShadowBlur'),
+            elOpacity: document.getElementById('elOpacity'), delBtn: document.getElementById('deleteElBtn'), dupBtn: document.getElementById('duplicateElBtn'),
             
-            layersList: document.getElementById('layersList'),
-            
-            undo: document.getElementById('undoBtn'), redo: document.getElementById('redoBtn'), psd: document.getElementById('psdBtn'), share: document.getElementById('shareBtn'), download: document.getElementById('downloadBtn'),
-            saveDraft: document.getElementById('saveDraftBtn'), loadDraft: document.getElementById('loadDraftBtn'),
-            placeholder: document.getElementById('placeholderText')
+            // أخرى
+            layersList: document.getElementById('layersList'), undo: document.getElementById('undoBtn'), redo: document.getElementById('redoBtn'), psd: document.getElementById('psdBtn'), pdf: document.getElementById('pdfBtn'), share: document.getElementById('shareBtn'), download: document.getElementById('downloadBtn'), placeholder: document.getElementById('placeholderText'),
+            openProjectsBtn: document.getElementById('openProjectsBtn'), projectsModal: document.getElementById('projectsModal'), newProjectName: document.getElementById('newProjectName'), saveNewProjectBtn: document.getElementById('saveNewProjectBtn'), saveUpdateProjectBtn: document.getElementById('saveUpdateProjectBtn'), projectsList: document.getElementById('projectsList')
         };
 
-        // === التهيئة ومستمعي الأحداث ===
+        // === دوال الحالة والتراجع ===
+        function saveState(clearRedo = true) {
+            historyStack.push({
+                elements: elements.map(el => ({ ...el, image: el.image ? el.image : null })),
+                isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters},
+                previewImageSrc: currentPreviewImage ? currentPreviewImage.src : null,
+                w: canvas.width, h: canvas.height
+            });
+            if(historyStack.length > 20) historyStack.shift();
+            if(clearRedo) redoStack = [];
+            if (els.undo) els.undo.disabled = false; 
+            if (els.redo) els.redo.disabled = true;
+        }
 
-        // 1. الخلفية والمساحة
-        els.imgUpload.addEventListener('change', handleBgUpload);
-        els.presetSizes.addEventListener('change', (e) => {
-            const disabled = !!e.target.value;
-            els.customW.disabled = disabled; els.customH.disabled = disabled;
-            if(disabled){ els.customW.value=''; els.customH.value=''; }
-        });
-        els.createBlankBtn.addEventListener('click', createBlankCanvas);
+        function undo() {
+            if(!historyStack.length) return;
+            redoStack.push({ elements: elements.map(e=>({...e})), isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters}, previewImageSrc: currentPreviewImage?.src, w: canvas.width, h: canvas.height });
+            applyState(historyStack.pop());
+            if (els.redo) els.redo.disabled = false; 
+            if (els.undo) els.undo.disabled = historyStack.length===0;
+        }
+
+        function redo() {
+            if(!redoStack.length) return;
+            historyStack.push({ elements: elements.map(e=>({...e})), isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters}, previewImageSrc: currentPreviewImage?.src, w: canvas.width, h: canvas.height });
+            applyState(redoStack.pop());
+            if (els.undo) els.undo.disabled = false; 
+            if (els.redo) els.redo.disabled = redoStack.length===0;
+        }
+
+        function applyState(s) {
+            elements = s.elements.map(e=>({...e})); isBlankCanvas = s.isBlankCanvas; canvasBgColor = s.canvasBgColor; bgFilters = {...s.bgFilters};
+            canvas.width = s.w; canvas.height = s.h; selectedElement = null;
+            if(els.bgColor) els.bgColor.value = canvasBgColor; 
+            if(els.bgBrightness) els.bgBrightness.value = bgFilters.bright || 100; 
+            if(els.bgContrast) els.bgContrast.value = bgFilters.cont || 100; 
+            if(els.bgSaturation) els.bgSaturation.value = bgFilters.saturation || 100; 
+            if(els.bgBlur) els.bgBlur.value = bgFilters.blur || 0;
+            if(s.previewImageSrc && !isBlankCanvas) { const img = new Image(); img.onload = () => { currentPreviewImage = img; updateCanvas(); }; img.src = s.previewImageSrc; } else { currentPreviewImage = null; updateCanvas(); }
+            updateUI();
+        }
+
+        // === مستمعي الأحداث الأساسية ===
+        if (els.imgUpload) els.imgUpload.addEventListener('change', handleBgUpload);
+        if (els.psdImport) els.psdImport.addEventListener('change', handlePSDImport);
+        if (els.presetSizes) els.presetSizes.addEventListener('change', (e) => { const disabled = !!e.target.value; els.customW.disabled = disabled; els.customH.disabled = disabled; if(disabled){ els.customW.value=''; els.customH.value=''; }});
+        if (els.createBlankBtn) els.createBlankBtn.addEventListener('click', createBlankCanvas);
         
         ['input', 'change'].forEach(evt => {
-            els.bgColor.addEventListener(evt, () => { if(isBlankCanvas){ canvasBgColor=els.bgColor.value; drawPreview(); }});
-            els.bgBrightness.addEventListener(evt, () => { bgFilters.brightness = els.bgBrightness.value; drawPreview(); });
-            els.bgContrast.addEventListener(evt, () => { bgFilters.contrast = els.bgContrast.value; drawPreview(); });
-            els.bgSaturation.addEventListener(evt, () => { bgFilters.saturation = els.bgSaturation.value; drawPreview(); });
-            els.bgBlur.addEventListener(evt, () => { bgFilters.blur = els.bgBlur.value; drawPreview(); });
+            if (els.bgColor) els.bgColor.addEventListener(evt, () => { if(isBlankCanvas){ canvasBgColor=els.bgColor.value; updateCanvas(); }});
+            if (els.bgBrightness) els.bgBrightness.addEventListener(evt, () => { bgFilters.brightness = els.bgBrightness.value; updateCanvas(); });
+            if (els.bgContrast) els.bgContrast.addEventListener(evt, () => { bgFilters.contrast = els.bgContrast.value; updateCanvas(); });
+            if (els.bgSaturation) els.bgSaturation.addEventListener(evt, () => { bgFilters.saturation = els.bgSaturation.value; updateCanvas(); });
+            if (els.bgBlur) els.bgBlur.addEventListener(evt, () => { bgFilters.blur = els.bgBlur.value; updateCanvas(); });
         });
 
-        // 2. إضافة العناصر
-        els.addText.addEventListener('click', () => addElement('text'));
-        els.addRect.addEventListener('click', () => addElement('rect'));
-        els.addCircle.addEventListener('click', () => addElement('circle'));
-        els.addImg.addEventListener('click', () => els.newImgUpload.click());
-        els.newImgUpload.addEventListener('change', handleImageElementUpload);
-        els.aiText.addEventListener('click', generateAIText);
-        els.aiImg.addEventListener('click', generateAIImage);
+        if (els.addText) els.addText.addEventListener('click', () => addElement('text')); 
+        if (els.addRect) els.addRect.addEventListener('click', () => addElement('rect')); 
+        if (els.addCircle) els.addCircle.addEventListener('click', () => addElement('circle')); 
+        if (els.addTriangle) els.addTriangle.addEventListener('click', () => addElement('triangle')); 
+        if (els.addLine) els.addLine.addEventListener('click', () => addElement('line'));
+        if (els.addImg) els.addImg.addEventListener('click', () => els.newImgUpload.click()); 
+        if (els.newImgUpload) els.newImgUpload.addEventListener('change', handleImageElementUpload);
+        if (els.aiText) els.aiText.addEventListener('click', generateAIText); 
+        if (els.aiImg) els.aiImg.addEventListener('click', generateAIImage);
 
-        // 3. خصائص العناصر
-        const propInputs = [els.elText, els.elFont, els.elColor, els.elFill, els.elStroke, els.elStrokeW, els.elBright, els.elCont, els.elBlur, els.elSize, els.elOpacity];
+        // أدوات الرسم
+        if (els.brushBtn) els.brushBtn.addEventListener('click', () => toggleDrawMode('brush'));
+        if (els.eraserBtn) els.eraserBtn.addEventListener('click', () => toggleDrawMode('eraser'));
+
+        let isEditingInput = false;
+        const propInputs = [els.elText, els.elFont, els.elFontSize, els.elColor, els.elFill, els.elStroke, els.elStrokeW, els.elBright, els.elCont, els.elBlur, els.elOpacity, els.elShadowC, els.elShadowB];
         propInputs.forEach(input => {
-            input.addEventListener('focus', () => { if(!isEditingInput) { saveState(); isEditingInput = true; }});
-            input.addEventListener('blur', () => isEditingInput = false);
-            input.addEventListener('input', updateSelectedElementProps);
+            if (input) {
+                input.addEventListener('focus', () => { if(!isEditingInput) { saveState(); isEditingInput = true; }});
+                input.addEventListener('blur', () => isEditingInput = false);
+                input.addEventListener('input', updateSelectedElementProps);
+            }
         });
-        els.delBtn.addEventListener('click', () => { saveState(); elements = elements.filter(e => e.id !== selectedElement.id); selectedElement = null; updateUI(); drawPreview(); });
 
-        // 4. أزرار التحكم
-        els.undo.addEventListener('click', undo);
-        els.redo.addEventListener('click', redo);
-        els.download.addEventListener('click', downloadFinal);
-        els.psd.addEventListener('click', exportPSD);
-        els.share.addEventListener('click', shareImage);
-        els.saveDraft.addEventListener('click', saveToLocalStorage);
-        els.loadDraft.addEventListener('click', loadFromLocalStorage);
+        if (els.elAlignR) els.elAlignR.onclick = () => { if(selectedElement) selectedElement.align = 'right'; updateCanvas(); };
+        if (els.elAlignC) els.elAlignC.onclick = () => { if(selectedElement) selectedElement.align = 'center'; updateCanvas(); };
+        if (els.elAlignL) els.elAlignL.onclick = () => { if(selectedElement) selectedElement.align = 'left'; updateCanvas(); };
 
-        // 5. أحداث الكانفاس
-        canvas.addEventListener('mousedown', startDrag); canvas.addEventListener('mousemove', drag); canvas.addEventListener('mouseup', endDrag); canvas.addEventListener('mouseleave', endDrag);
-        canvas.addEventListener('touchstart', startDrag, { passive: false }); canvas.addEventListener('touchmove', drag, { passive: false }); canvas.addEventListener('touchend', endDrag);
+        if (els.delBtn) els.delBtn.addEventListener('click', () => { saveState(); elements = elements.filter(e => e.id !== selectedElement.id); selectedElement = null; updateUI(); updateCanvas(); });
+        if (els.dupBtn) els.dupBtn.addEventListener('click', duplicateSelectedElement);
 
-        // اختصارات الكيبورد
+        if (els.undo) els.undo.addEventListener('click', undo); 
+        if (els.redo) els.redo.addEventListener('click', redo);
+        if (els.download) els.download.addEventListener('click', downloadFinal); 
+        if (els.psd) els.psd.addEventListener('click', exportPSD); 
+        if (els.pdf) els.pdf.addEventListener('click', exportPDF); 
+        if (els.share) els.share.addEventListener('click', shareImage);
+        
+        if (els.openProjectsBtn) els.openProjectsBtn.addEventListener('click', () => { renderProjects(); els.projectsModal.classList.add('active'); });
+        if (els.saveNewProjectBtn) els.saveNewProjectBtn.addEventListener('click', () => saveProjectData(false));
+        if (els.saveUpdateProjectBtn) els.saveUpdateProjectBtn.addEventListener('click', () => saveProjectData(true));
+
+        canvas.addEventListener('mousedown', handlePointerDown); canvas.addEventListener('mousemove', handlePointerMove); canvas.addEventListener('mouseup', handlePointerUp); canvas.addEventListener('mouseleave', handlePointerUp);
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: false }); canvas.addEventListener('touchmove', handlePointerMove, { passive: false }); canvas.addEventListener('touchend', handlePointerUp);
+
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
                 if (e.key === 'y') { e.preventDefault(); redo(); }
             }
-            if(e.key === 'Delete' && selectedElement && !isEditingInput) { saveState(); elements = elements.filter(el => el.id !== selectedElement.id); selectedElement = null; updateUI(); drawPreview(); }
+            if(e.key === 'Delete' && selectedElement && !isEditingInput) { saveState(); elements = elements.filter(el => el.id !== selectedElement.id); selectedElement = null; updateUI(); updateCanvas(); }
         });
 
 
-        // === الوظائف الأساسية ===
-
+        // === وظائف التهيئة والإضافة ===
         function enableTools() {
-            [els.addText, els.addImg, els.addRect, els.addCircle, els.aiText, els.aiImg, els.download, els.psd, els.share].forEach(b => {
-                b.disabled = false; b.classList.remove('opacity-50', 'cursor-not-allowed');
+            [els.addText, els.addImg, els.addRect, els.addCircle, els.addTriangle, els.addLine, els.aiText, els.aiImg, els.brushBtn, els.eraserBtn, els.download, els.psd, els.pdf, els.share].forEach(b => {
+                if(b) { b.disabled = false; b.classList.remove('opacity-50', 'cursor-not-allowed'); }
             });
-            els.placeholder.style.display = 'none';
-            canvas.style.display = 'block';
-            els.bgFiltersPanel.classList.remove('hidden');
+            if (els.placeholder) els.placeholder.style.display = 'none'; 
+            if (canvas) canvas.style.display = 'block'; 
+            if (els.bgFiltersPanel) els.bgFiltersPanel.classList.remove('hidden');
+        }
+
+        function toggleDrawMode(mode) {
+            if (activeDrawingMode === mode) {
+                activeDrawingMode = 'none'; 
+                if(els.brushBtn) els.brushBtn.classList.remove('active'); 
+                if(els.eraserBtn) els.eraserBtn.classList.remove('active');
+                canvas.style.cursor = 'default';
+            } else {
+                activeDrawingMode = mode;
+                if(els.brushBtn) els.brushBtn.classList.toggle('active', mode === 'brush'); 
+                if(els.eraserBtn) els.eraserBtn.classList.toggle('active', mode === 'eraser');
+                selectedElement = null; updateUI(); updateCanvas();
+                canvas.style.cursor = mode === 'eraser' ? 'cell' : 'crosshair';
+            }
         }
 
         function handleBgUpload(e) {
-            selectedFiles = Array.from(e.target.files);
-            if (!selectedFiles.length) return;
-            saveState();
-            isBlankCanvas = false;
-            
+            const file = e.target.files[0]; if (!file) return;
+            saveState(); isBlankCanvas = false;
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const img = new Image();
                 img.onload = () => {
-                    currentPreviewImage = img;
-                    canvas.width = img.width; canvas.height = img.height;
-                    enableTools();
-                    if(elements.length === 0) toggleAccordion('addElements'); // افتح تبويب الإضافة للمستخدم الجديد
-                    drawPreview();
+                    currentPreviewImage = img; canvas.width = img.width; canvas.height = img.height;
+                    elements = []; selectedElement = null; activeDrawingMode = 'none'; currentProjectId = null;
+                    if(els.saveUpdateProjectBtn) els.saveUpdateProjectBtn.classList.add('hidden');
+                    bgFilters = { brightness: 100, contrast: 100, saturation: 100, blur: 0 };
+                    enableTools(); updateUI(); updateCanvas();
+                }; img.src = ev.target.result;
+            }; reader.readAsDataURL(file);
+        }
+
+        async function handlePSDImport(e) {
+            const file = e.target.files[0]; if (!file) return;
+            if (typeof agPsd === 'undefined') return alert('أداة الـ PSD لم يتم تحميلها بعد، يرجى تحديث الصفحة.');
+            try {
+                if(els.psdImportText) els.psdImportText.textContent = '⏳ الفتح...'; saveState();
+                const buffer = await file.arrayBuffer(); const psd = agPsd.readPsd(buffer);
+                isBlankCanvas = true; currentPreviewImage = null; canvasBgColor = 'transparent'; currentProjectId = null; 
+                if(els.saveUpdateProjectBtn) els.saveUpdateProjectBtn.classList.add('hidden');
+                canvas.width = psd.width; canvas.height = psd.height; elements = []; activeDrawingMode = 'none';
+                
+                if (psd.children) {
+                    for(let layer of psd.children) {
+                        if (layer.canvas && !layer.hidden && layer.name !== "الخلفية") {
+                            await new Promise(res => {
+                                const img = new Image(); img.onload = () => {
+                                    elements.push({ id: Date.now()+Math.random(), type: 'image', image: img, x: layer.left + (img.width/2), y: layer.top + (img.height/2), width: img.width, height: img.height, scaleX: 1, scaleY: 1, rotation: 0, opacity: layer.opacity / 255, isVisible: true, name: layer.name, filters: { bright: 100, cont: 100, blur: 0 }});
+                                    res();
+                                }; img.src = layer.canvas.toDataURL();
+                            });
+                        } else if (layer.canvas && layer.name === "الخلفية") {
+                             const bgImg = new Image(); bgImg.onload = () => { currentPreviewImage = bgImg; isBlankCanvas = false; }; bgImg.src = layer.canvas.toDataURL();
+                        }
+                    }
                 }
-                img.src = ev.target.result;
-            }
-            reader.readAsDataURL(selectedFiles[0]);
+                enableTools(); updateUI(); updateCanvas();
+            } catch (err) { alert('خطأ في الملف. تأكد أنه بصيغة RGB وليس CMYK.'); } finally { if(els.psdImportText) els.psdImportText.textContent = '🗂️ استيراد ملف PSD'; if(els.psdImport) els.psdImport.value = ''; }
         }
 
         function createBlankCanvas() {
             let w, h;
-            if (els.presetSizes.value) {
-                [w, h] = els.presetSizes.value.split('x').map(Number);
-            } else if (els.customW.value && els.customH.value) {
-                w = Math.round(parseFloat(els.customW.value) * PIXELS_PER_CM);
-                h = Math.round(parseFloat(els.customH.value) * PIXELS_PER_CM);
-            } else { return alert('أدخل المقاسات أو اختر مقاس جاهز'); }
+            if (els.presetSizes && els.presetSizes.value) { [w, h] = els.presetSizes.value.split('x').map(Number); } 
+            else if (els.customW && els.customW.value && els.customH && els.customH.value) { w = Math.round(parseFloat(els.customW.value) * PIXELS_PER_CM); h = Math.round(parseFloat(els.customH.value) * PIXELS_PER_CM); } 
+            else { return alert('أدخل المقاسات'); }
 
-            saveState();
-            isBlankCanvas = true; selectedFiles = []; canvasBgColor = els.bgColor.value;
-            canvas.width = w; canvas.height = h;
-            enableTools();
-            drawPreview();
+            saveState(); isBlankCanvas = true; canvasBgColor = els.bgColor ? els.bgColor.value : '#ffffff'; currentPreviewImage = null; canvas.width = w; canvas.height = h;
+            elements = []; selectedElement = null; activeDrawingMode = 'none'; currentProjectId = null; 
+            if(els.saveUpdateProjectBtn) els.saveUpdateProjectBtn.classList.add('hidden');
+            bgFilters = { brightness: 100, contrast: 100, saturation: 100, blur: 0 };
+            enableTools(); updateUI(); updateCanvas();
         }
 
         function addElement(type) {
             if (!currentPreviewImage && !isBlankCanvas) return;
-            saveState();
+            saveState(); activeDrawingMode = 'none'; 
+            if(els.brushBtn) els.brushBtn.classList.remove('active'); 
+            if(els.eraserBtn) els.eraserBtn.classList.remove('active');
             
-            const el = {
-                id: Date.now(), type: type,
-                x: canvas.width / 2, y: canvas.height / 2,
-                opacity: 1, isVisible: true, name: `عنصر جديد ${elements.length + 1}`
-            };
-
             const minDim = Math.min(canvas.width, canvas.height);
+            const el = { id: Date.now(), type: type, x: canvas.width/2, y: canvas.height/2, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1, isVisible: true, shadowColor: '#000000', shadowBlur: 0, name: `عنصر` };
 
             if (type === 'text') {
-                el.text = 'نص جديد'; el.color = '#000000'; el.font = 'Cairo'; el.size = Math.max(minDim * 0.05, 30);
-                el.name = 'نص: نص جديد';
-            } else if (type === 'rect') {
-                el.size = Math.max(minDim * 0.15, 100); el.fill = '#3b82f6'; el.stroke = '#1e3a8a'; el.strokeW = 0;
-                el.name = 'شكل: مربع';
-            } else if (type === 'circle') {
-                el.size = Math.max(minDim * 0.15, 100); el.fill = '#ec4899'; el.stroke = '#9d174d'; el.strokeW = 0;
-                el.name = 'شكل: دائرة';
+                el.text = 'نص جديد'; el.color = '#dc2626'; el.font = 'Cairo'; el.fontSize = Math.max(minDim * 0.08, 40); el.align = 'center'; el.width = 100; el.height = 50; el.name = 'نص';
+            } else if (['rect', 'circle', 'triangle'].includes(type)) {
+                el.width = Math.max(minDim * 0.15, 100); el.height = el.width; el.fill = type==='circle'?'#f97316':(type==='rect'?'#dc2626':'#eab308'); el.stroke = '#000000'; el.strokeW = 0; el.name = type;
+            } else if (type === 'line') {
+                el.width = Math.max(minDim * 0.2, 100); el.height = 10; el.fill = '#000000'; el.name = 'خط';
             }
 
-            elements.push(el); selectedElement = el;
-            updateUI(); drawPreview();
+            elements.push(el); selectedElement = el; updateUI(); updateCanvas();
         }
 
         function handleImageElementUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            saveState();
-            const reader = new FileReader();
+            const file = e.target.files[0]; if (!file) return;
+            saveState(); const reader = new FileReader();
             reader.onload = (ev) => {
-                const img = new Image();
-                img.onload = () => {
-                    const el = {
-                        id: Date.now(), type: 'image', image: img,
-                        x: canvas.width/2, y: canvas.height/2, size: Math.max(canvas.width * 0.15, 100), opacity: 1, isVisible: true,
-                        filters: { bright: 100, cont: 100, blur: 0 },
-                        name: 'صورة: ' + file.name.substring(0,10)
-                    };
-                    elements.push(el); selectedElement = el;
-                    updateUI(); drawPreview();
+                const img = new Image(); img.onload = () => {
+                    const maxDim = Math.max(canvas.width, canvas.height) * 0.4;
+                    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                    elements.push({ id: Date.now(), type: 'image', image: img, x: canvas.width/2, y: canvas.height/2, width: img.width*scale, height: img.height*scale, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1, isVisible: true, shadowColor: '#000000', shadowBlur: 0, filters: { bright: 100, cont: 100, blur: 0 }, name: 'صورة' });
+                    selectedElement = elements[elements.length-1]; updateUI(); updateCanvas();
                 }; img.src = ev.target.result;
-            }; reader.readAsDataURL(file);
-            els.newImgUpload.value = '';
+            }; reader.readAsDataURL(file); 
+            if(els.newImgUpload) els.newImgUpload.value = '';
+        }
+
+        function duplicateSelectedElement() {
+            if(!selectedElement) return;
+            saveState();
+            const clone = { ...selectedElement, id: Date.now() + Math.random(), x: selectedElement.x + 30, y: selectedElement.y + 30 };
+            elements.push(clone); selectedElement = clone; updateUI(); updateCanvas();
         }
 
         function updateSelectedElementProps() {
             if (!selectedElement) return;
-            const el = selectedElement;
-            el.size = parseInt(els.elSize.value);
-            el.opacity = parseFloat(els.elOpacity.value);
+            const el = selectedElement; 
+            if(els.elOpacity) el.opacity = parseFloat(els.elOpacity.value);
+            if(els.elShadowC) el.shadowColor = els.elShadowC.value; 
+            if(els.elShadowB) el.shadowBlur = parseInt(els.elShadowB.value) || 0;
 
             if (el.type === 'text') {
-                el.text = els.elText.value; el.font = els.elFont.value; el.color = els.elColor.value;
-                el.name = 'نص: ' + (el.text.split('\n')[0].substring(0, 15) || 'فارغ');
-            } else if (el.type === 'rect' || el.type === 'circle') {
-                el.fill = els.elFill.value; el.stroke = els.elStroke.value; el.strokeW = parseInt(els.elStrokeW.value);
-            } else if (el.type === 'image') {
-                el.filters = { bright: els.elBright.value, cont: els.elCont.value, blur: els.elBlur.value };
-            }
-            renderLayersPanel(); // تحديث الأسماء في قائمة الطبقات
-            drawPreview();
+                if(els.elText) el.text = els.elText.value; 
+                if(els.elFont) el.font = els.elFont.value; 
+                if(els.elColor) el.color = els.elColor.value; 
+                if(els.elFontSize) el.fontSize = parseInt(els.elFontSize.value);
+                el.name = el.text.split('\n')[0].substring(0, 15) || 'فارغ';
+            } else if (['rect', 'circle', 'triangle', 'line'].includes(el.type)) {
+                if(els.elFill) el.fill = els.elFill.value; 
+                if(els.elStroke) el.stroke = els.elStroke.value; 
+                if(els.elStrokeW) el.strokeW = parseInt(els.elStrokeW.value);
+            } 
+            if(el.filters && els.elBright && els.elCont && els.elBlur) el.filters = { bright: els.elBright.value, cont: els.elCont.value, blur: els.elBlur.value };
+            renderLayersPanel(); updateCanvas();
         }
 
         function updateUI() {
-            // تحديث لوحة الخصائص
             if (!selectedElement) {
-                els.propsWrap.classList.add('opacity-50'); els.propsContent.classList.add('pointer-events-none');
-                els.textProps.classList.add('hidden'); els.shapeProps.classList.add('hidden'); els.imgProps.classList.add('hidden'); els.commonProps.classList.add('hidden');
+                if (els.propsWrap) els.propsWrap.classList.add('opacity-50'); 
+                if (els.propsContent) els.propsContent.classList.add('pointer-events-none');
+                if (els.textProps) els.textProps.classList.add('hidden'); 
+                if (els.shapeProps) els.shapeProps.classList.add('hidden'); 
+                if (els.imgProps) els.imgProps.classList.add('hidden'); 
+                if (els.commonProps) els.commonProps.classList.add('hidden'); 
+                if (els.shadowProps) els.shadowProps.classList.add('hidden');
             } else {
-                els.propsWrap.classList.remove('opacity-50'); els.propsContent.classList.remove('pointer-events-none');
-                els.commonProps.classList.remove('hidden');
-                els.elSize.value = selectedElement.size; els.elSize.max = Math.max(canvas.width, canvas.height);
-                els.elOpacity.value = selectedElement.opacity;
+                if (els.propsWrap) els.propsWrap.classList.remove('opacity-50'); 
+                if (els.propsContent) els.propsContent.classList.remove('pointer-events-none');
+                if (els.commonProps) els.commonProps.classList.remove('hidden'); 
+                if (els.shadowProps) els.shadowProps.classList.remove('hidden');
+                if (selectedElement.filters && els.imgProps) els.imgProps.classList.remove('hidden'); 
+                else if (els.imgProps) els.imgProps.classList.add('hidden');
+                
+                if (els.elOpacity) els.elOpacity.value = selectedElement.opacity;
+                if (els.elShadowC) els.elShadowC.value = selectedElement.shadowColor || '#000000'; 
+                if (els.elShadowB) els.elShadowB.value = selectedElement.shadowBlur || 0;
+                
+                if(selectedElement.filters && els.elBright && els.elCont && els.elBlur) { 
+                    els.elBright.value = selectedElement.filters.bright; 
+                    els.elCont.value = selectedElement.filters.cont; 
+                    els.elBlur.value = selectedElement.filters.blur; 
+                }
 
-                els.textProps.classList.add('hidden'); els.shapeProps.classList.add('hidden'); els.imgProps.classList.add('hidden');
+                if (els.textProps) els.textProps.classList.add('hidden'); 
+                if (els.shapeProps) els.shapeProps.classList.add('hidden'); 
 
                 if (selectedElement.type === 'text') {
-                    els.textProps.classList.remove('hidden');
-                    els.elText.value = selectedElement.text; els.elFont.value = selectedElement.font || 'Cairo'; els.elColor.value = selectedElement.color;
-                } else if (selectedElement.type === 'rect' || selectedElement.type === 'circle') {
-                    els.shapeProps.classList.remove('hidden');
-                    els.elFill.value = selectedElement.fill; els.elStroke.value = selectedElement.stroke; els.elStrokeW.value = selectedElement.strokeW;
-                } else if (selectedElement.type === 'image') {
-                    els.imgProps.classList.remove('hidden');
-                    els.elBright.value = selectedElement.filters?.bright || 100; els.elCont.value = selectedElement.filters?.cont || 100; els.elBlur.value = selectedElement.filters?.blur || 0;
+                    if (els.textProps) els.textProps.classList.remove('hidden');
+                    if (els.elText) els.elText.value = selectedElement.text; 
+                    if (els.elFont) els.elFont.value = selectedElement.font; 
+                    if (els.elFontSize) els.elFontSize.value = selectedElement.fontSize; 
+                    if (els.elColor) els.elColor.value = selectedElement.color;
+                } else if (['rect', 'circle', 'triangle', 'line'].includes(selectedElement.type)) {
+                    if (els.shapeProps) els.shapeProps.classList.remove('hidden');
+                    if (els.elFill) els.elFill.value = selectedElement.fill; 
+                    if (els.elStroke) els.elStroke.value = selectedElement.stroke; 
+                    if (els.elStrokeW) els.elStrokeW.value = selectedElement.strokeW || 0;
                 }
-                
-                // فتح تبويب الخصائص تلقائياً عند تحديد عنصر
-                if(!document.getElementById('elementProps').classList.contains('open')) toggleAccordion('elementProps');
             }
             renderLayersPanel();
         }
 
-        // === إدارة الطبقات (Layers) ===
+        // === إدارة الطبقات ===
         function renderLayersPanel() {
+            if (!els.layersList) return;
             els.layersList.innerHTML = '';
-            if (elements.length === 0) {
-                els.layersList.innerHTML = '<li class="text-xs text-center text-gray-400 py-4">لا توجد عناصر مضافة بعد</li>';
-                return;
-            }
+            if (elements.length === 0) { els.layersList.innerHTML = '<li class="text-xs text-center text-gray-400 py-4 font-semibold">لا توجد عناصر</li>'; return; }
             
-            // نعرض الطبقات بالعكس (الأحدث فوق)
             const reversedElements = [...elements].reverse();
-            
             reversedElements.forEach((el, index) => {
-                const actualIndex = elements.length - 1 - index; // الإندكس الأصلي في المصفوفة
+                const actualIndex = elements.length - 1 - index;
                 const li = document.createElement('li');
-                li.className = `flex justify-between items-center p-2 rounded text-xs border cursor-pointer transition ${selectedElement?.id === el.id ? 'bg-blue-100 border-blue-300 shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'}`;
+                li.className = `flex justify-between items-center p-2 rounded text-xs border cursor-pointer transition ${selectedElement?.id === el.id ? 'bg-red-50 border-red-300 shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'}`;
                 
-                // أيقونة نوع العنصر
                 let iconStr = '📄';
-                if(el.type === 'image') iconStr = '🖼️';
-                if(el.type === 'rect') iconStr = '🟦';
-                if(el.type === 'circle') iconStr = '🔵';
+                if(el.type === 'image') iconStr = '🖼️'; else if(el.type === 'rect') iconStr = '🟦'; else if(el.type === 'circle') iconStr = '🔵'; else if(el.type === 'triangle') iconStr = '🔺'; else if(el.type === 'line') iconStr = '➖'; else if(el.type === 'path') iconStr = '🖌️';
 
-                // محتوى الطبقة
                 li.innerHTML = `
                     <div class="flex items-center gap-2 flex-1 overflow-hidden" onclick="selectLayer(${el.id})">
-                        <span class="opacity-70">${iconStr}</span>
-                        <span class="truncate font-semibold ${!el.isVisible ? 'line-through text-gray-400' : 'text-gray-700'}">${el.name}</span>
+                        <span class="opacity-70 text-lg leading-none">${iconStr}</span>
+                        <span class="truncate font-bold ${!el.isVisible ? 'line-through text-gray-400' : 'text-gray-700'}">${el.name}</span>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="toggleVisibility(${el.id}, event)" class="p-1 hover:bg-gray-200 rounded" title="إخفاء/إظهار">
-                            ${el.isVisible ? '👁️' : '🔒'}
-                        </button>
-                        <div class="flex flex-col">
-                            <button onclick="moveLayer(${actualIndex}, 1, event)" class="text-[10px] bg-gray-200 hover:bg-gray-300 px-1 rounded-t leading-none" title="تقديم للأمام" ${actualIndex === elements.length-1 ? 'disabled class="opacity-30"' : ''}>▲</button>
-                            <button onclick="moveLayer(${actualIndex}, -1, event)" class="text-[10px] bg-gray-200 hover:bg-gray-300 px-1 rounded-b leading-none" title="إرجاع للخلف" ${actualIndex === 0 ? 'disabled class="opacity-30"' : ''}>▼</button>
+                        <button onclick="toggleVisibility(${el.id}, event)" class="p-1 hover:bg-red-100 rounded text-base">${el.isVisible ? '👁️' : '🔒'}</button>
+                        <div class="flex flex-col ml-1 border-l border-gray-200 pl-1">
+                            <button onclick="moveLayer(${actualIndex}, 1, event)" class="text-[10px] bg-gray-100 hover:bg-gray-200 px-1.5 py-0.5 rounded-t leading-none font-bold">▲</button>
+                            <button onclick="moveLayer(${actualIndex}, -1, event)" class="text-[10px] bg-gray-100 hover:bg-gray-200 px-1.5 py-0.5 rounded-b leading-none font-bold">▼</button>
                         </div>
                     </div>
                 `;
@@ -539,375 +711,389 @@
             });
         }
 
-        window.selectLayer = function(id) { selectedElement = elements.find(e => e.id === id); updateUI(); drawPreview(); };
-        window.toggleVisibility = function(id, e) { e.stopPropagation(); saveState(); const el = elements.find(e => e.id === id); el.isVisible = !el.isVisible; if(!el.isVisible && selectedElement?.id === id) selectedElement = null; updateUI(); drawPreview(); };
-        window.moveLayer = function(index, direction, e) {
-            e.stopPropagation(); saveState();
-            const newIndex = index + direction;
-            if(newIndex < 0 || newIndex >= elements.length) return;
-            // تبديل الأماكن
-            const temp = elements[index];
-            elements[index] = elements[newIndex];
-            elements[newIndex] = temp;
-            renderLayersPanel(); drawPreview();
-        };
+        window.selectLayer = function(id) { activeDrawingMode = 'none'; selectedElement = elements.find(e => e.id === id); updateUI(); updateCanvas(); };
+        window.toggleVisibility = function(id, e) { e.stopPropagation(); saveState(); const el = elements.find(e => e.id === id); el.isVisible = !el.isVisible; if(!el.isVisible && selectedElement?.id === id) selectedElement = null; updateUI(); updateCanvas(); };
+        window.moveLayer = function(index, direction, e) { e.stopPropagation(); saveState(); const newIndex = index + direction; if(newIndex < 0 || newIndex >= elements.length) return; const temp = elements[index]; elements[index] = elements[newIndex]; elements[newIndex] = temp; renderLayersPanel(); updateCanvas(); };
 
         // === رسم الكانفاس ===
-        function buildFiltersString(f) {
-            if(!f) return 'none';
-            return `brightness(${f.bright || 100}%) contrast(${f.cont || 100}%) saturate(${f.saturation || 100}%) blur(${f.blur || 0}px)`;
-        }
+        function buildFiltersString(f) { return (!f || (f.bright==100 && f.cont==100 && f.saturation==100 && f.blur==0)) ? 'none' : `brightness(${f.bright}%) contrast(${f.cont}%) saturate(${f.saturation || 100}%) blur(${f.blur}px)`; }
 
         function drawCore(targetCtx, w, h, isFinalExport = false) {
             targetCtx.clearRect(0, 0, w, h);
             
-            // رسم الخلفية
             targetCtx.filter = buildFiltersString(bgFilters);
-            if (isBlankCanvas) {
-                targetCtx.fillStyle = canvasBgColor; targetCtx.fillRect(0, 0, w, h);
-            } else if (currentPreviewImage) {
-                targetCtx.drawImage(currentPreviewImage, 0, 0, w, h);
-            }
+            if (isBlankCanvas) { targetCtx.fillStyle = canvasBgColor; targetCtx.fillRect(0, 0, w, h); } 
+            else if (currentPreviewImage) { targetCtx.drawImage(currentPreviewImage, 0, 0, w, h); }
             targetCtx.filter = 'none';
 
-            // مقياس الرسم للتحميل النهائي
             const scale = w / canvas.width;
 
-            // رسم العناصر
             elements.forEach(el => {
                 if (!el.isVisible) return;
+                
+                targetCtx.save();
                 targetCtx.globalAlpha = el.opacity;
-                const fx = el.x * scale, fy = el.y * scale, fSize = el.size * scale;
+                if(el.filters) targetCtx.filter = buildFiltersString(el.filters);
+
+                if (el.shadowBlur > 0) { targetCtx.shadowColor = el.shadowColor; targetCtx.shadowBlur = el.shadowBlur * scale; targetCtx.shadowOffsetX = 2*scale; targetCtx.shadowOffsetY = 2*scale; }
                 
-                targetCtx.save(); // حفظ حالة الكانفاس
-                
+                if (el.type === 'path') {
+                    if (el.isEraser) targetCtx.globalCompositeOperation = 'destination-out';
+                    targetCtx.strokeStyle = el.color; targetCtx.lineWidth = el.width * scale; targetCtx.lineCap = 'round'; targetCtx.lineJoin = 'round';
+                    targetCtx.beginPath();
+                    el.points.forEach((p, i) => { if(i===0) targetCtx.moveTo(p.x * scale, p.y * scale); else targetCtx.lineTo(p.x * scale, p.y * scale); });
+                    targetCtx.stroke();
+                    targetCtx.restore();
+                    return; 
+                }
+
+                const cx = el.x * scale; const cy = el.y * scale;
+                targetCtx.translate(cx, cy); targetCtx.rotate(el.rotation || 0); targetCtx.scale(el.scaleX, el.scaleY);
+
+                const ew = el.width * scale; const eh = el.height * scale;
+                const halfW = ew / 2; const halfH = eh / 2;
+
                 if (el.type === 'text') {
-                    targetCtx.font = `bold ${fSize}px ${el.font || 'Cairo'}, sans-serif`;
-                    targetCtx.fillStyle = el.color;
-                    targetCtx.textAlign = 'center'; targetCtx.textBaseline = 'middle';
+                    const fSize = el.fontSize * scale;
+                    targetCtx.font = `bold ${fSize}px ${el.font}, sans-serif`;
+                    targetCtx.fillStyle = el.color; targetCtx.textBaseline = 'middle';
                     
-                    const lines = el.text.split('\n');
-                    const lh = fSize * 1.2;
-                    let sY = fy - ((lines.length - 1) * lh) / 2;
+                    const lines = el.text.split('\n'); const lh = fSize * 1.2; let startY = -((lines.length - 1) * lh) / 2;
                     let maxW = 0;
+                    
                     lines.forEach((line, i) => {
-                        targetCtx.fillText(line, fx, sY + (i * lh));
-                        const m = targetCtx.measureText(line).width; if(m > maxW) maxW = m;
+                        const mw = targetCtx.measureText(line).width; if(mw > maxW) maxW = mw;
+                        let xPos = 0;
+                        if(el.align === 'left') { targetCtx.textAlign = 'left'; xPos = -halfW; }
+                        else if(el.align === 'right') { targetCtx.textAlign = 'right'; xPos = halfW; }
+                        else { targetCtx.textAlign = 'center'; xPos = 0; }
+                        targetCtx.fillText(line, xPos, startY + (i * lh));
                     });
-                    if(!isFinalExport) { el.width = maxW/scale; el.height = (lines.length*lh)/scale; }
+                    if(!isFinalExport && interactionMode === 'none') { el.width = Math.max(maxW / scale, 20); el.height = Math.max((lines.length * lh) / scale, 20); }
                 
                 } else if (el.type === 'rect') {
-                    targetCtx.fillStyle = el.fill; targetCtx.strokeStyle = el.stroke; targetCtx.lineWidth = (el.strokeW || 0) * scale;
-                    targetCtx.beginPath();
-                    targetCtx.rect(fx - fSize/2, fy - fSize/2, fSize, fSize);
-                    targetCtx.fill(); if(el.strokeW > 0) targetCtx.stroke();
-                    if(!isFinalExport) { el.width = el.size; el.height = el.size; }
-                
+                    targetCtx.fillStyle = el.fill; targetCtx.strokeStyle = el.stroke; targetCtx.lineWidth = el.strokeW * scale || 0;
+                    targetCtx.beginPath(); targetCtx.rect(-halfW, -halfH, ew, eh); targetCtx.fill(); if(el.strokeW > 0) targetCtx.stroke();
                 } else if (el.type === 'circle') {
-                    targetCtx.fillStyle = el.fill; targetCtx.strokeStyle = el.stroke; targetCtx.lineWidth = (el.strokeW || 0) * scale;
-                    targetCtx.beginPath();
-                    targetCtx.arc(fx, fy, fSize/2, 0, Math.PI * 2);
-                    targetCtx.fill(); if(el.strokeW > 0) targetCtx.stroke();
-                    if(!isFinalExport) { el.width = el.size; el.height = el.size; }
-                
+                    targetCtx.fillStyle = el.fill; targetCtx.strokeStyle = el.stroke; targetCtx.lineWidth = el.strokeW * scale || 0;
+                    targetCtx.beginPath(); targetCtx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI*2); targetCtx.fill(); if(el.strokeW > 0) targetCtx.stroke();
+                } else if (el.type === 'triangle') {
+                    targetCtx.fillStyle = el.fill; targetCtx.strokeStyle = el.stroke; targetCtx.lineWidth = el.strokeW * scale || 0;
+                    targetCtx.beginPath(); targetCtx.moveTo(0, -halfH); targetCtx.lineTo(halfW, halfH); targetCtx.lineTo(-halfW, halfH); targetCtx.closePath(); targetCtx.fill(); if(el.strokeW > 0) targetCtx.stroke();
+                } else if (el.type === 'line') {
+                    targetCtx.fillStyle = el.fill; targetCtx.fillRect(-halfW, -eh/2, ew, eh);
                 } else if (el.type === 'image') {
-                    targetCtx.filter = buildFiltersString(el.filters);
-                    const asp = el.image.width / el.image.height;
-                    const wImg = asp * fSize, hImg = fSize;
-                    targetCtx.drawImage(el.image, fx - wImg/2, fy - hImg/2, wImg, hImg);
-                    targetCtx.filter = 'none';
-                    if(!isFinalExport) { el.width = wImg/scale; el.height = hImg/scale; }
+                    targetCtx.drawImage(el.image, -halfW, -halfH, ew, eh);
                 }
 
                 targetCtx.restore();
 
-                // رسم إطار التحديد في وضع المعاينة فقط
                 if (!isFinalExport && el === selectedElement) {
-                    targetCtx.globalAlpha = 1; targetCtx.strokeStyle = '#3b82f6'; targetCtx.lineWidth = 2; targetCtx.setLineDash([8, 8]);
-                    const pad = 10;
-                    targetCtx.strokeRect(el.x - el.width/2 - pad, el.y - el.height/2 - pad, el.width + pad*2, el.height + pad*2);
-                    targetCtx.setLineDash([]);
+                    targetCtx.save(); targetCtx.translate(cx, cy); targetCtx.rotate(el.rotation || 0);
+                    
+                    const boxW = ew * Math.abs(el.scaleX); const boxH = eh * Math.abs(el.scaleY);
+                    const hW = boxW/2; const hH = boxH/2;
+
+                    targetCtx.strokeStyle = '#dc2626'; targetCtx.lineWidth = 1.5; targetCtx.setLineDash([4, 4]); targetCtx.strokeRect(-hW, -hH, boxW, boxH); targetCtx.setLineDash([]);
+
+                    targetCtx.fillStyle = '#ffffff'; targetCtx.strokeStyle = '#dc2626'; targetCtx.lineWidth = 1.5;
+                    const hs = HANDLE_SIZE; const hsHalf = hs/2;
+                    
+                    const handles = [
+                        {x: -hW, y: -hH}, {x: 0, y: -hH}, {x: hW, y: -hH},
+                        {x: -hW, y: 0},                   {x: hW, y: 0},
+                        {x: -hW, y: hH},  {x: 0, y: hH},  {x: hW, y: hH}
+                    ];
+                    handles.forEach(h => { targetCtx.fillRect(h.x - hsHalf, h.y - hsHalf, hs, hs); targetCtx.strokeRect(h.x - hsHalf, h.y - hsHalf, hs, hs); });
+                    
+                    targetCtx.beginPath(); targetCtx.moveTo(0, -hH); targetCtx.lineTo(0, -hH - 25); targetCtx.stroke();
+                    targetCtx.beginPath(); targetCtx.arc(0, -hH - 25, hsHalf, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+                    
+                    targetCtx.restore();
                 }
             });
-            targetCtx.globalAlpha = 1;
+
+            if (isFinalExport) {
+                targetCtx.save();
+                targetCtx.globalAlpha = 0.5;
+                const wScale = Math.min(w, h) * 0.03;
+                targetCtx.font = `bold ${wScale}px Cairo, sans-serif`;
+                targetCtx.fillStyle = '#ffffff'; targetCtx.shadowColor = '#000'; targetCtx.shadowBlur = 4;
+                targetCtx.textAlign = 'right'; targetCtx.textBaseline = 'bottom';
+                targetCtx.fillText(WATERMARK_TEXT, w - (wScale), h - (wScale));
+                targetCtx.restore();
+            }
         }
 
-        function drawPreview() { if(currentPreviewImage || isBlankCanvas) drawCore(ctx, canvas.width, canvas.height, false); }
+        function updateCanvas() {
+            if (!isDrawingEngineActive) {
+                isDrawingEngineActive = true;
+                requestAnimationFrame(() => { if(currentPreviewImage || isBlankCanvas) drawCore(ctx, canvas.width, canvas.height, false); isDrawingEngineActive = false; });
+            }
+        }
 
-        // === السحب والإفلات ===
+        // === التفاعل הסريع ===
         function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+            const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: (cx - rect.left) * (canvas.width / rect.width), y: (cy - rect.top) * (canvas.height / rect.height) };
         }
 
-        function startDrag(e) {
+        function checkHandleHit(pos, el) {
+            if(el.type === 'path') return null;
+            const hs = HANDLE_SIZE * 1.5; 
+            
+            const angle = -(el.rotation || 0);
+            const cos = Math.cos(angle); const sin = Math.sin(angle);
+            const dxObj = pos.x - el.x; const dyObj = pos.y - el.y;
+            const rx = dxObj * cos - dyObj * sin;
+            const ry = dxObj * sin + dyObj * cos;
+
+            const hw = (el.width * Math.abs(el.scaleX))/2; const hh = (el.height * Math.abs(el.scaleY))/2;
+
+            if (Math.abs(rx - 0) <= hs && Math.abs(ry - (-hh - 25)) <= hs) return 'rotate';
+            if (Math.abs(rx - (-hw)) <= hs && Math.abs(ry - (-hh)) <= hs) return 'resize-tl';
+            if (Math.abs(rx - (hw)) <= hs && Math.abs(ry - (-hh)) <= hs) return 'resize-tr';
+            if (Math.abs(rx - (-hw)) <= hs && Math.abs(ry - (hh)) <= hs) return 'resize-bl';
+            if (Math.abs(rx - (hw)) <= hs && Math.abs(ry - (hh)) <= hs) return 'resize-br';
+            if (Math.abs(rx - 0) <= hs && Math.abs(ry - (-hh)) <= hs) return 'resize-t';
+            if (Math.abs(rx - 0) <= hs && Math.abs(ry - (hh)) <= hs) return 'resize-b';
+            if (Math.abs(rx - (-hw)) <= hs && Math.abs(ry - 0) <= hs) return 'resize-l';
+            if (Math.abs(rx - (hw)) <= hs && Math.abs(ry - 0) <= hs) return 'resize-r';
+            return null;
+        }
+
+        function handlePointerDown(e) {
             if (!currentPreviewImage && !isBlankCanvas) return;
             if (e.type === 'touchstart') e.preventDefault();
             const pos = getMousePos(e);
             startX = pos.x; startY = pos.y;
+
+            if (activeDrawingMode !== 'none') {
+                saveState(); interactionMode = 'drawing';
+                const colorValue = els.brushColor ? els.brushColor.value : '#dc2626';
+                const el = { id: Date.now(), type: 'path', points: [pos], color: colorValue, width: activeDrawingMode==='eraser'? 40 : 10, isEraser: activeDrawingMode==='eraser', opacity: 1, isVisible: true, name: activeDrawingMode==='eraser'?'مسح':'رسم حر' };
+                elements.push(el); currentPath = el; updateCanvas(); return;
+            }
             
+            if (selectedElement) {
+                const hitHandle = checkHandleHit(pos, selectedElement);
+                if (hitHandle) { saveState(); interactionMode = hitHandle; initialElState = { x: selectedElement.x, y: selectedElement.y, w: selectedElement.width, h: selectedElement.height, fs: selectedElement.fontSize, rot: selectedElement.rotation || 0 }; return; }
+            }
+
             let clicked = false;
-            // البحث من الأعلى للأسفل
             for (let i = elements.length - 1; i >= 0; i--) {
-                const el = elements[i];
-                if(!el.isVisible) continue;
-                const pad = 15;
-                if (pos.x >= (el.x - el.width/2 - pad) && pos.x <= (el.x + el.width/2 + pad) && pos.y >= (el.y - el.height/2 - pad) && pos.y <= (el.y + el.height/2 + pad)) {
+                const el = elements[i]; if(!el.isVisible || el.type === 'path') continue;
+                if (pos.x >= (el.x - el.width/2) && pos.x <= (el.x + el.width/2) && pos.y >= (el.y - el.height/2) && pos.y <= (el.y + el.height/2)) {
                     if (selectedElement !== el) { selectedElement = el; updateUI(); }
-                    saveState(); isDragging = true; clicked = true;
-                    // لا ننقل العنصر للمقدمة هنا لأن الطبقات يديرها المستخدم من اللوحة الآن
-                    break;
+                    saveState(); interactionMode = 'drag'; clicked = true; break;
                 }
             }
-            if (!clicked) { selectedElement = null; updateUI(); }
-            drawPreview();
+            if (!clicked) { selectedElement = null; interactionMode = 'none'; updateUI(); }
+            updateCanvas();
         }
 
-        function drag(e) {
-            if (!isDragging || !selectedElement) return;
+        function handlePointerMove(e) {
+            if (interactionMode === 'none') return;
             if (e.type === 'touchmove') e.preventDefault();
             const pos = getMousePos(e);
-            selectedElement.x += pos.x - startX; selectedElement.y += pos.y - startY;
-            startX = pos.x; startY = pos.y;
-            drawPreview();
-        }
-        function endDrag() { isDragging = false; }
+            const dx = pos.x - startX; const dy = pos.y - startY;
 
-        // === الذكاء الاصطناعي ===
-        const apiKey = ""; 
-
-        async function fetchAI(url, payload) {
-            let delay = 1000;
-            for (let i=0; i<5; i++) {
-                try {
-                    const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-                    if(!res.ok) throw new Error(); return await res.json();
-                } catch(e) { if(i===4) throw e; await new Promise(r=>setTimeout(r, delay)); delay*=2; }
+            if (interactionMode === 'drawing' && currentPath) {
+                currentPath.points.push(pos); updateCanvas(); startX = pos.x; startY = pos.y; return;
             }
-        }
 
-        async function generateAIText() {
-            if(!els.aiPrompt.value.trim()) return alert('اكتب وصفاً');
-            els.aiText.disabled = true; els.aiText.textContent = '...';
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const res = await fetchAI(url, { contents: [{parts: [{text: `اكتب نص قصير جدا كمحتوى تصميم: ${els.aiPrompt.value}`}]}] });
-                const text = res.candidates?.[0]?.content?.parts?.[0]?.text;
-                if(text) { addElement('text'); elements[elements.length-1].text = text.trim(); updateUI(); drawPreview(); els.aiPrompt.value=''; }
-            } catch(e) { alert('خطأ في توليد النص'); } finally { els.aiText.disabled=false; els.aiText.textContent='توليد نص'; }
-        }
+            if (!selectedElement) return;
 
-        async function generateAIImage() {
-            if(!els.aiPrompt.value.trim()) return alert('اكتب وصفاً');
-            els.aiImg.disabled = true; els.aiImg.textContent = '...';
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
-                const res = await fetchAI(url, { instances: {prompt: els.aiPrompt.value}, parameters: {sampleCount:1} });
-                const b64 = res.predictions?.[0]?.bytesBase64Encoded;
-                if(b64) {
-                    saveState();
-                    const img = new Image();
-                    img.onload = () => {
-                        elements.push({ id: Date.now(), type: 'image', image: img, x: canvas.width/2, y: canvas.height/2, size: 200, opacity: 1, isVisible: true, name: 'صورة ذكاء اصطناعي' });
-                        selectedElement = elements[elements.length-1]; updateUI(); drawPreview(); els.aiPrompt.value='';
-                    }; img.src = `data:image/png;base64,${b64}`;
+            if (interactionMode === 'drag') {
+                selectedElement.x += dx; selectedElement.y += dy; startX = pos.x; startY = pos.y;
+            } else if (interactionMode === 'rotate') {
+                const cx = selectedElement.x; const cy = selectedElement.y;
+                selectedElement.rotation = Math.atan2(pos.y - cy, pos.x - cx) + Math.PI/2;
+            } else if (interactionMode.startsWith('resize')) {
+                const el = selectedElement; const ini = initialElState;
+                let deltaW = 0, deltaH = 0;
+                
+                const angle = -(ini.rot || 0); const cos = Math.cos(angle); const sin = Math.sin(angle);
+                const localDx = dx * cos - dy * sin; const localDy = dx * sin + dy * cos;
+
+                if(interactionMode.includes('r')) deltaW = localDx * 2;
+                if(interactionMode.includes('l')) deltaW = -localDx * 2;
+                if(interactionMode.includes('b')) deltaH = localDy * 2;
+                if(interactionMode.includes('t')) deltaH = -localDy * 2;
+
+                if (el.type === 'text') {
+                    let d = (Math.abs(localDx) > Math.abs(localDy)) ? localDx : localDy;
+                    if(interactionMode.includes('l') || interactionMode.includes('t')) d = -d;
+                    el.fontSize = Math.max(10, ini.fs + (d * 0.5));
+                } else {
+                    if (['resize-tl', 'resize-tr', 'resize-bl', 'resize-br'].includes(interactionMode)) {
+                        const ratio = ini.w / ini.h; let newW = ini.w + deltaW; let newH = newW / ratio;
+                        if(newW > 10 && newH > 10) { el.width = newW; el.height = newH; }
+                    } else {
+                        let newW = ini.w + deltaW; let newH = ini.h + deltaH;
+                        if (interactionMode.includes('l') || interactionMode.includes('r')) if(newW > 10) el.width = newW;
+                        if (interactionMode.includes('t') || interactionMode.includes('b')) if(newH > 10) el.height = newH;
+                    }
                 }
-            } catch(e) { alert('خطأ في توليد الصورة'); } finally { els.aiImg.disabled=false; els.aiImg.textContent='توليد صورة'; }
+            }
+            updateCanvas();
+        }
+        function handlePointerUp() { 
+            if(interactionMode === 'drawing') { currentPath = null; renderLayersPanel(); }
+            interactionMode = 'none'; 
         }
 
-        // === الحفظ والتصدير ===
-        
-        function saveState(clearRedo = true) {
-            historyStack.push({
-                elements: elements.map(el => ({ ...el, image: el.image ? el.image : null })), // نحتفظ بكائن الصورة
-                isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters},
-                previewImageSrc: currentPreviewImage ? currentPreviewImage.src : null,
-                w: canvas.width, h: canvas.height
+        // === حفظ واستيراد ومشاريع ===
+        function imageToBase64(img) { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0); return c.toDataURL('image/jpeg', 0.8); }
+
+        function getProjects() { return JSON.parse(localStorage.getItem('sawa_projects_v4')) || []; }
+        function saveProjects(arr) { localStorage.setItem('sawa_projects_v4', JSON.stringify(arr)); }
+
+        function renderProjects() {
+            if (!els.projectsList) return;
+            const projs = getProjects(); els.projectsList.innerHTML = '';
+            if(projs.length === 0) { els.projectsList.innerHTML = '<p class="text-center text-gray-500 py-4 font-bold">لا توجد مشاريع محفوظة.</p>'; return; }
+            projs.forEach((p, index) => {
+                const div = document.createElement('div'); div.className = 'bg-white p-3 rounded-xl border border-gray-200 flex justify-between items-center shadow-sm';
+                div.innerHTML = `<div><h3 class="font-bold text-red-700">${p.name}</h3><p class="text-xs text-gray-400 mt-1">🕒 ${p.date}</p></div><div class="flex gap-2"><button onclick="loadProject(${index})" class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded text-xs font-bold border border-emerald-200">فتح</button><button onclick="deleteProject(${index})" class="bg-red-50 text-red-700 px-3 py-1 rounded text-xs font-bold border border-red-200">حذف</button></div>`;
+                els.projectsList.appendChild(div);
             });
-            if(historyStack.length > 20) historyStack.shift();
-            if(clearRedo) redoStack = [];
-            els.undo.disabled = false; els.redo.disabled = true;
         }
 
-        function undo() {
-            if(!historyStack.length) return;
-            redoStack.push({ elements: elements.map(e=>({...e})), isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters}, previewImageSrc: currentPreviewImage?.src, w: canvas.width, h: canvas.height });
-            applyState(historyStack.pop());
-            els.redo.disabled = false; els.undo.disabled = historyStack.length===0;
+        function saveProjectData(isUpdate) {
+            if(!currentPreviewImage && !isBlankCanvas) return alert('لا يوجد تصميم لحفظه');
+            const nameValue = els.newProjectName ? els.newProjectName.value.trim() : '';
+            const name = nameValue || `مشروع ${new Date().toLocaleTimeString()}`;
+            try {
+                const btn = isUpdate ? els.saveUpdateProjectBtn : els.saveNewProjectBtn;
+                if (!btn) return;
+                const origText = btn.textContent; btn.textContent = '⏳';
+                
+                const pData = {
+                    id: isUpdate && currentProjectId ? currentProjectId : Date.now().toString(),
+                    name: name, date: new Date().toLocaleString('ar-EG'), w: canvas.width, h: canvas.height, isBlankCanvas, canvasBgColor, bgFilters,
+                    bgImageSrc: currentPreviewImage && !isBlankCanvas ? imageToBase64(currentPreviewImage) : null,
+                    elements: elements.map(el => ({ ...el, image: el.image ? imageToBase64(el.image) : null })) 
+                };
+                
+                const projs = getProjects();
+                if(isUpdate && currentProjectId) { const idx = projs.findIndex(p=>p.id === currentProjectId); if(idx>-1) projs[idx] = pData; else projs.push(pData); }
+                else { projs.push(pData); currentProjectId = pData.id; }
+                
+                saveProjects(projs); 
+                if (els.newProjectName) els.newProjectName.value = ''; 
+                renderProjects(); 
+                if (els.saveUpdateProjectBtn) els.saveUpdateProjectBtn.classList.remove('hidden');
+                setTimeout(() => btn.textContent = origText, 500);
+            } catch(e) { alert('المساحة غير كافية لحفظ الصورة في المتصفح'); }
         }
 
-        function redo() {
-            if(!redoStack.length) return;
-            historyStack.push({ elements: elements.map(e=>({...e})), isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters}, previewImageSrc: currentPreviewImage?.src, w: canvas.width, h: canvas.height });
-            applyState(redoStack.pop());
-            els.undo.disabled = false; els.redo.disabled = redoStack.length===0;
+        async function loadProject(index) {
+            const projs = getProjects(); const data = projs[index]; if(!data) return;
+            try {
+                if (els.projectsModal) els.projectsModal.classList.remove('active');
+                currentProjectId = data.id || null; 
+                if (els.saveUpdateProjectBtn) els.saveUpdateProjectBtn.classList.remove('hidden'); 
+                if (els.newProjectName) els.newProjectName.value = data.name;
+                
+                const loadImg = (src) => new Promise(res => { if(!src) return res(null); const i = new Image(); i.onload=()=>res(i); i.src=src; });
+                currentPreviewImage = await loadImg(data.bgImageSrc);
+                
+                const loadedEls = [];
+                for(let el of data.elements) { if(el.type === 'image' && el.image) el.image = await loadImg(el.image); loadedEls.push(el); }
+
+                elements = loadedEls; isBlankCanvas = data.isBlankCanvas; canvasBgColor = data.canvasBgColor; bgFilters = data.bgFilters || { bright: 100, cont: 100, saturation: 100, blur: 0 };
+                canvas.width = data.w; canvas.height = data.h; selectedElement = null; historyStack = []; redoStack = [];
+                enableTools(); updateUI(); updateCanvas();
+            } catch(e) { alert('خطأ أثناء التحميل'); }
         }
+        window.deleteProject = function(index) { if(confirm('تأكيد الحذف؟')) { const p = getProjects(); p.splice(index, 1); saveProjects(p); renderProjects(); }};
+        window.loadProject = loadProject;
 
-        function applyState(s) {
-            elements = s.elements.map(e=>({...e})); isBlankCanvas = s.isBlankCanvas; canvasBgColor = s.canvasBgColor; bgFilters = {...s.bgFilters};
-            canvas.width = s.w; canvas.height = s.h; selectedElement = null;
-            
-            // تحديث واجهة الفلاتر والخلفية
-            els.bgColor.value = canvasBgColor; els.bgBrightness.value = bgFilters.bright || 100; els.bgContrast.value = bgFilters.cont || 100; els.bgSaturation.value = bgFilters.saturation || 100; els.bgBlur.value = bgFilters.blur || 0;
-
-            if(s.previewImageSrc && !isBlankCanvas) {
-                const img = new Image(); img.onload = () => { currentPreviewImage = img; drawPreview(); }; img.src = s.previewImageSrc;
-            } else { currentPreviewImage = null; drawPreview(); }
-            updateUI();
-        }
-
+        // === التصدير النهائي (Download, PSD, PDF) ===
         async function downloadFinal() {
             if(!currentPreviewImage && !isBlankCanvas) return;
-            const fCanvas = document.createElement('canvas'); const fCtx = fCanvas.getContext('2d');
-            
-            if(selectedFiles.length <= 1) {
-                drawCore(fCtx, canvas.width, canvas.height, true);
-                const link = document.createElement('a'); link.download = 'Sawa_Design.png'; link.href = fCanvas.toDataURL('image/png'); link.click();
-            } else {
-                // حفظ متعدد للصور بصيغة ZIP
-                els.download.disabled = true; els.download.textContent = 'جاري التحضير...';
-                const zip = new JSZip(); const folder = zip.folder("Sawa_Designs");
-                for(let file of selectedFiles) {
-                    await new Promise(res => {
-                        const r = new FileReader();
-                        r.onload = (ev) => {
-                            const img = new Image(); img.onload = () => {
-                                currentPreviewImage = img; // تغيير الخلفية مؤقتا
-                                canvas.width = img.width; canvas.height = img.height;
-                                drawCore(fCtx, canvas.width, canvas.height, true);
-                                fCanvas.toBlob(b => { folder.file("Sawa_" + file.name, b); res(); }, 'image/jpeg', 0.95);
-                            }; img.src = ev.target.result;
-                        }; r.readAsDataURL(file);
-                    });
-                }
-                const content = await zip.generateAsync({type:"blob"});
-                const link = document.createElement('a'); link.href = URL.createObjectURL(content); link.download = "Sawa_Designs_Multi.zip"; link.click();
-                
-                // إعادة الصورة الأولى كخلفية بعد الانتهاء
-                const r = new FileReader(); r.onload = (ev)=>{ const i = new Image(); i.onload=()=>{ currentPreviewImage=i; canvas.width=i.width; canvas.height=i.height; drawPreview(); els.download.disabled=false; els.download.innerHTML='حفظ و تحميل'; }; i.src=ev.target.result; }; r.readAsDataURL(selectedFiles[0]);
-            }
+            const fCanvas = document.createElement('canvas'); const fCtx = fCanvas.getContext('2d'); fCanvas.width = canvas.width; fCanvas.height = canvas.height;
+            drawCore(fCtx, canvas.width, canvas.height, true);
+            const link = document.createElement('a'); link.download = 'Sawa_Design.png'; link.href = fCanvas.toDataURL('image/png'); link.click();
         }
 
         async function shareImage() {
             if(!currentPreviewImage && !isBlankCanvas) return;
             try {
-                const fCanvas = document.createElement('canvas'); drawCore(fCanvas.getContext('2d'), canvas.width, canvas.height, true);
+                const fCanvas = document.createElement('canvas'); fCanvas.width = canvas.width; fCanvas.height = canvas.height; drawCore(fCanvas.getContext('2d'), canvas.width, canvas.height, true);
                 fCanvas.toBlob(async (blob) => {
-                    const f = new File([blob], "Sawa_Design.png", { type: "image/png" });
-                    if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ title: 'تصميمي من سوا', files: [f] });
-                    else alert('متصفحك لا يدعم المشاركة المباشرة. احفظ الصورة أولاً.');
-                }, 'image/png');
-            } catch(e) { console.error(e); }
+                    const f = new File([blob], "Sawa_Design.jpg", { type: "image/jpeg" });
+                    if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ title: 'تصميمي من سوا', files: [f] }); else alert('متصفحك لا يدعم المشاركة المباشرة. احفظ الصورة أولاً.');
+                }, 'image/jpeg', 0.95);
+            } catch(e) {}
         }
 
-        // حفظ PSD مع الفلاتر
-        function exportPSD() {
-            if(!currentPreviewImage && !isBlankCanvas || typeof agPsd === 'undefined') return alert('الرجاء الانتظار قليلاً');
-            const origHtml = els.psd.innerHTML; els.psd.disabled = true; els.psd.innerHTML = 'معالجة...';
-
+        async function exportPDF() {
+            if(!currentPreviewImage && !isBlankCanvas || typeof window.jspdf === 'undefined') return alert('انتظر قليلاً');
+            if(!els.pdf) return;
+            const origHtml = els.pdf.innerHTML; els.pdf.disabled = true; els.pdf.innerHTML = '⏳...';
             setTimeout(() => {
                 try {
-                    const w = Math.max(1, canvas.width), h = Math.max(1, canvas.height);
-                    const children = [];
-                    
-                    // الخلفية كصورة مدمجة بفلاترها
-                    const bgCnv = document.createElement('canvas'); bgCnv.width=w; bgCnv.height=h; const bgC = bgCnv.getContext('2d');
-                    bgC.filter = buildFiltersString(bgFilters);
-                    if(isBlankCanvas) { bgC.fillStyle = canvasBgColor; bgC.fillRect(0,0,w,h); } else { bgC.drawImage(currentPreviewImage,0,0,w,h); }
-                    children.push({ name: 'الخلفية', canvas: bgCnv });
-
-                    // العناصر
-                    elements.forEach(el => {
-                        if(!el.isVisible) return;
-                        const elCnv = document.createElement('canvas'); elCnv.width=w; elCnv.height=h; const eC = elCnv.getContext('2d');
-                        eC.globalAlpha = el.opacity;
-                        if(el.type==='text') {
-                            eC.font = `bold ${el.size}px ${el.font||'Cairo'}, sans-serif`; eC.fillStyle = el.color; eC.textAlign = 'center'; eC.textBaseline = 'middle';
-                            const lines = el.text.split('\n'); const lh = el.size*1.2; let sY = el.y - ((lines.length-1)*lh)/2;
-                            lines.forEach((line, i) => eC.fillText(line, el.x, sY + (i*lh)));
-                        } else if(el.type==='rect') {
-                            eC.fillStyle = el.fill; eC.strokeStyle = el.stroke; eC.lineWidth = el.strokeW||0;
-                            eC.fillRect(el.x-el.size/2, el.y-el.size/2, el.size, el.size); if(el.strokeW>0) eC.strokeRect(el.x-el.size/2, el.y-el.size/2, el.size, el.size);
-                        } else if(el.type==='circle') {
-                            eC.fillStyle = el.fill; eC.strokeStyle = el.stroke; eC.lineWidth = el.strokeW||0; eC.beginPath(); eC.arc(el.x, el.y, el.size/2, 0, Math.PI*2); eC.fill(); if(el.strokeW>0) eC.stroke();
-                        } else if(el.type==='image') {
-                            eC.filter = buildFiltersString(el.filters);
-                            const wImg = (el.image.width/el.image.height)*el.size;
-                            eC.drawImage(el.image, el.x-wImg/2, el.y-el.size/2, wImg, el.size);
-                        }
-                        children.push({ name: el.name, canvas: elCnv });
-                    });
-
-                    const buffer = agPsd.writePsd({ width: w, height: h, children: children });
-                    const blob = new Blob([buffer], { type: 'application/octet-stream' });
-                    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = "Sawa_Design_Layers.psd"; link.click();
-                } catch(e) { alert('حدث خطأ أثناء تصدير PSD'); }
-                finally { els.psd.disabled = false; els.psd.innerHTML = origHtml; }
+                    const fCanvas = document.createElement('canvas'); fCanvas.width = canvas.width; fCanvas.height = canvas.height; drawCore(fCanvas.getContext('2d'), canvas.width, canvas.height, true);
+                    const doc = new window.jspdf.jsPDF({ orientation: canvas.width > canvas.height ? 'l' : 'p', unit: 'px', format: [canvas.width, canvas.height] });
+                    doc.addImage(fCanvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, canvas.width, canvas.height); doc.save("Sawa_Design.pdf");
+                } catch(e) {} finally { els.pdf.disabled = false; els.pdf.innerHTML = origHtml; }
             }, 100);
         }
 
-        // === التخزين المحلي (Save/Load Draft) ===
-        function imageToBase64(img) {
-            const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-            c.getContext('2d').drawImage(img, 0, 0); return c.toDataURL('image/jpeg', 0.8); // استخدام جودة 80% لتوفير المساحة
+        function exportPSD() {
+            if(!currentPreviewImage && !isBlankCanvas || typeof agPsd === 'undefined') return alert('انتظر قليلاً');
+            if(!els.psd) return;
+            const origHtml = els.psd.innerHTML; els.psd.disabled = true; els.psd.innerHTML = '⏳...';
+            setTimeout(() => {
+                try {
+                    const w = Math.max(1, canvas.width), h = Math.max(1, canvas.height); const children = [];
+                    const bgCnv = document.createElement('canvas'); bgCnv.width=w; bgCnv.height=h; const bgC = bgCnv.getContext('2d');
+                    bgC.filter = buildFiltersString(bgFilters); if(isBlankCanvas) { bgC.fillStyle = canvasBgColor; bgC.fillRect(0,0,w,h); } else { bgC.drawImage(currentPreviewImage,0,0,w,h); }
+                    children.push({ name: 'الخلفية', canvas: bgCnv });
+
+                    elements.forEach(el => {
+                        if(!el.isVisible) return;
+                        const elCnv = document.createElement('canvas'); elCnv.width=w; elCnv.height=h; const eC = elCnv.getContext('2d');
+                        
+                        eC.clearRect(0,0,w,h); eC.globalAlpha = el.opacity;
+                        if(el.filters) eC.filter = buildFiltersString(el.filters);
+                        if(el.shadowBlur > 0) { eC.shadowColor = el.shadowColor; eC.shadowBlur = el.shadowBlur; eC.shadowOffsetX = 2; eC.shadowOffsetY = 2; }
+                        
+                        if(el.type === 'path') {
+                            if(el.isEraser) return; 
+                            eC.strokeStyle = el.color; eC.lineWidth = el.width; eC.lineCap = 'round'; eC.lineJoin = 'round'; eC.beginPath();
+                            el.points.forEach((p, i) => { if(i===0) eC.moveTo(p.x, p.y); else eC.lineTo(p.x, p.y); }); eC.stroke();
+                        } else {
+                            eC.translate(el.x, el.y); eC.rotate(el.rotation||0); eC.scale(el.scaleX, el.scaleY);
+                            const ew=el.width, eh=el.height, hw=ew/2, hh=eh/2;
+                            if(el.type==='text') { eC.font=`bold ${el.fontSize}px ${el.font}, sans-serif`; eC.fillStyle=el.color; eC.textAlign=el.align||'center'; eC.textBaseline='middle'; const lines=el.text.split('\n'); const lh=el.fontSize*1.2; let sY=-((lines.length-1)*lh)/2; lines.forEach((line, i) => { let xp=0; if(el.align==='left') xp=-hw; else if(el.align==='right') xp=hw; eC.fillText(line, xp, sY+(i*lh)); }); }
+                            else if(el.type==='rect') { eC.fillStyle=el.fill; eC.strokeStyle=el.stroke; eC.lineWidth=el.strokeW||0; eC.fillRect(-hw,-hh,ew,eh); if(el.strokeW>0) eC.strokeRect(-hw,-hh,ew,eh); }
+                            else if(el.type==='circle') { eC.fillStyle=el.fill; eC.strokeStyle=el.stroke; eC.lineWidth=el.strokeW||0; eC.beginPath(); eC.ellipse(0,0,hw,hh,0,0,Math.PI*2); eC.fill(); if(el.strokeW>0) eC.stroke(); }
+                            else if(el.type==='triangle') { eC.fillStyle=el.fill; eC.strokeStyle=el.stroke; eC.lineWidth=el.strokeW||0; eC.beginPath(); eC.moveTo(0,-hh); eC.lineTo(hw,hh); eC.lineTo(-hw,hh); eC.closePath(); eC.fill(); if(el.strokeW>0) eC.stroke(); }
+                            else if(el.type==='line') { eC.fillStyle=el.fill; eC.fillRect(-hw,-eh/2,ew,eh); }
+                            else if(el.type==='image') { eC.drawImage(el.image,-hw,-hh,ew,eh); }
+                        }
+                        children.push({ name: el.name, canvas: elCnv });
+                    });
+                    
+                    const wmCnv = document.createElement('canvas'); wmCnv.width=w; wmCnv.height=h; const wmC = wmCnv.getContext('2d');
+                    wmC.globalAlpha = 0.5; const wScale = Math.min(w, h) * 0.03; wmC.font = `bold ${wScale}px Cairo, sans-serif`; wmC.fillStyle = '#ffffff'; wmC.shadowColor = '#000'; wmC.shadowBlur = 4; wmC.textAlign = 'right'; wmC.textBaseline = 'bottom'; wmC.fillText(WATERMARK_TEXT, w - wScale, h - wScale);
+                    children.push({ name: 'علامة مائية', canvas: wmCnv });
+
+                    const buffer = agPsd.writePsd({ width: w, height: h, children: children });
+                    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+                    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = "Sawa_Design.psd"; link.click();
+                } catch(e) { alert('خطأ في استخراج PSD'); } finally { els.psd.disabled = false; els.psd.innerHTML = origHtml; }
+            }, 100);
         }
 
-        function saveToLocalStorage() {
-            if(!currentPreviewImage && !isBlankCanvas) return alert('لا يوجد تصميم لحفظه');
-            try {
-                els.saveDraft.textContent = 'جاري الحفظ...';
-                
-                const saveData = {
-                    w: canvas.width, h: canvas.height, isBlankCanvas, canvasBgColor, bgFilters,
-                    bgImageSrc: currentPreviewImage && !isBlankCanvas ? imageToBase64(currentPreviewImage) : null,
-                    elements: elements.map(el => ({
-                        ...el,
-                        image: el.image ? imageToBase64(el.image) : null // تحويل الصور لنصوص
-                    }))
-                };
-                
-                localStorage.setItem('sawaDesignDraft', JSON.stringify(saveData));
-                setTimeout(() => { els.saveDraft.textContent = '✅ تم الحفظ'; setTimeout(()=>els.saveDraft.textContent = '💾 حفظ كمسودة', 2000); }, 500);
-            } catch(e) { alert('عذراً، مساحة التخزين في المتصفح غير كافية لحفظ كل الصور. حاول استخدام مساحة عمل فارغة بصور أقل.'); els.saveDraft.textContent = '💾 حفظ كمسودة'; }
-        }
-
-        async function loadFromLocalStorage() {
-            const dataStr = localStorage.getItem('sawaDesignDraft');
-            if(!dataStr) return alert('لا توجد مسودة محفوظة سابقاً.');
-            
-            try {
-                els.loadDraft.textContent = 'جاري الاستعادة...';
-                const data = JSON.parse(dataStr);
-                
-                // تحميل الصور أولاً باستخدام وعود (Promises)
-                const loadImg = (src) => new Promise(res => { if(!src) return res(null); const i = new Image(); i.onload=()=>res(i); i.src=src; });
-                
-                currentPreviewImage = await loadImg(data.bgImageSrc);
-                
-                const loadedElements = [];
-                for(let el of data.elements) {
-                    if(el.type === 'image' && el.image) { el.image = await loadImg(el.image); }
-                    loadedElements.push(el);
-                }
-
-                // تطبيق البيانات
-                elements = loadedElements;
-                isBlankCanvas = data.isBlankCanvas; canvasBgColor = data.canvasBgColor; bgFilters = data.bgFilters || { bright: 100, cont: 100, saturation: 100, blur: 0 };
-                canvas.width = data.w; canvas.height = data.h;
-                
-                els.bgColor.value = canvasBgColor; els.bgBrightness.value = bgFilters.bright; els.bgContrast.value = bgFilters.cont; els.bgBlur.value = bgFilters.blur;
-                
-                selectedElement = null;
-                historyStack = []; redoStack = []; // تفريغ التاريخ عند الاستعادة
-                
-                enableTools(); updateUI(); drawPreview();
-                setTimeout(() => { els.loadDraft.textContent = '📂 استعادة مسودة'; }, 1000);
-
-            } catch(e) { alert('حدث خطأ أثناء استعادة المسودة.'); els.loadDraft.textContent = '📂 استعادة مسودة'; }
-        }
-
+        const apiKey = ""; 
+        async function fetchAI(url, payload) { let delay = 1000; for (let i=0; i<5; i++) { try { const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if(!res.ok) throw new Error(); return await res.json(); } catch(e) { if(i===4) throw e; await new Promise(r=>setTimeout(r, delay)); delay*=2; } } }
+        async function generateAIText() { if(!els.aiPrompt || !els.aiPrompt.value.trim()) return; if(els.aiText) els.aiText.disabled = true; try { const res = await fetchAI(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { contents: [{parts: [{text: `نص لتصميم: ${els.aiPrompt.value}`}]}] }); const text = res.candidates?.[0]?.content?.parts?.[0]?.text; if(text) { addElement('text'); elements[elements.length-1].text = text.trim(); updateUI(); updateCanvas(); } } catch(e){} finally { if(els.aiText) els.aiText.disabled=false; els.aiPrompt.value=''; } }
+        async function generateAIImage() { if(!els.aiPrompt || !els.aiPrompt.value.trim()) return; if(els.aiImg) els.aiImg.disabled = true; try { const res = await fetchAI(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, { instances: {prompt: els.aiPrompt.value}, parameters: {sampleCount:1} }); const b64 = res.predictions?.[0]?.bytesBase64Encoded; if(b64) { const img = new Image(); img.onload = () => { elements.push({ id: Date.now(), type: 'image', image: img, x: canvas.width/2, y: canvas.height/2, width: img.width, height: img.height, scaleX: 1, scaleY: 1, opacity: 1, isVisible: true, name: 'صورة AI' }); updateUI(); updateCanvas(); }; img.src = `data:image/png;base64,${b64}`; } } catch(e){} finally { if(els.aiImg) els.aiImg.disabled=false; els.aiPrompt.value=''; } }
     </script>
 </body>
 </html>
