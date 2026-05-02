@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صمم بنفسك مع سوا</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/ag-psd/dist/bundle.js"></script>
+    <!-- استدعاء خطوط جوجل العربية -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&family=Almarai:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f0fdf4; }
+        .font-tajawal { font-family: 'Tajawal', sans-serif; }
+        .font-almarai { font-family: 'Almarai', sans-serif; }
+        .font-amiri { font-family: 'Amiri', serif; }
+        
+        #previewCanvas {
+            max-width: 100%; height: auto; border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: none; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        /* تصميم التبويبات (Accordion) */
+        .accordion-content { transition: max-height 0.3s ease-out; overflow: hidden; max-height: 0; }
+        .accordion-content.open { max-height: 1000px; /* رقم كبير يكفي للمحتوى */ }
+        
+        /* التمرير المخصص للطبقات */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen p-2 md:p-6">
+
+    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <!-- الترويسة العلوية -->
+        <div class="bg-gradient-to-l from-green-600 to-blue-600 text-white p-4 md:p-6 text-center relative flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center gap-4 mb-4 md:mb-0">
+                <img src="SAWA LOGO.png" alt="شعار سوا" class="h-16 object-contain bg-white rounded-xl p-2 shadow-md" onerror="this.style.display='none'">
+                <div class="text-right">
+                    <h1 class="text-2xl md:text-3xl font-bold">صمم بنفسك مع سوا</h1>
+                    <p class="text-blue-100 text-sm mt-1">المساحة الإبداعية المتكاملة للتصميم</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 text-sm flex-wrap justify-center">
+                <button id="saveDraftBtn" class="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1 backdrop-blur-sm">
+                    💾 حفظ كمسودة
+                </button>
+                <button id="loadDraftBtn" class="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1 backdrop-blur-sm">
+                    📂 استعادة مسودة
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- لوحة التحكم (اليمين) -->
+            <div class="lg:col-span-4 space-y-4">
+                
+                <!-- تبويب 1: إعداد الخلفية -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <button class="w-full bg-gray-50 p-4 text-right font-bold text-gray-800 flex justify-between items-center hover:bg-gray-100" onclick="toggleAccordion('bgSetup')">
+                        <span>1. إعداد مساحة العمل (الخلفية)</span>
+                        <svg class="w-5 h-5 transition-transform" id="icon-bgSetup" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="bgSetup" class="accordion-content open px-4 py-4 space-y-4 border-t border-gray-100">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">رفع صورة خلفية للتعديل عليها:</label>
+                            <input type="file" id="imageUpload" accept="image/*" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                        </div>
+                        <div class="flex items-center my-2"><hr class="flex-grow border-gray-200"><span class="px-2 text-xs text-gray-400">أو تصميم فارغ</span><hr class="flex-grow border-gray-200"></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="presetSizes" class="p-2 border border-gray-300 rounded text-xs focus:ring-1">
+                                <option value="">-- مقاس جاهز --</option>
+                                <option value="1080x1080">بوست انستجرام</option>
+                                <option value="1080x1920">ستوري</option>
+                                <option value="2480x3508">ورقة A4</option>
+                            </select>
+                            <div class="flex gap-1 items-center">
+                                <input type="number" id="customW" placeholder="عرض" class="w-full p-2 border border-gray-300 rounded text-xs">
+                                <span>x</span>
+                                <input type="number" id="customH" placeholder="طول" class="w-full p-2 border border-gray-300 rounded text-xs">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <input type="color" id="bgColor" value="#ffffff" class="h-8 w-1/3 rounded cursor-pointer border border-gray-300">
+                            <button id="createBlankBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded transition">إنشاء مساحة</button>
+                        </div>
+
+                        <!-- فلاتر الخلفية -->
+                        <div id="bgFiltersPanel" class="hidden mt-3 pt-3 border-t border-gray-100">
+                            <label class="block text-xs font-semibold text-gray-600 mb-2">فلاتر الصورة الخلفية:</label>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>السطوع <input type="range" id="bgBrightness" min="0" max="200" value="100" class="w-full h-1 bg-gray-200 rounded"></div>
+                                <div>التباين <input type="range" id="bgContrast" min="0" max="200" value="100" class="w-full h-1 bg-gray-200 rounded"></div>
+                                <div>التشبع <input type="range" id="bgSaturation" min="0" max="200" value="100" class="w-full h-1 bg-gray-200 rounded"></div>
+                                <div>تمويه (Blur) <input type="range" id="bgBlur" min="0" max="20" value="0" class="w-full h-1 bg-gray-200 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تبويب 2: إضافة عناصر -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <button class="w-full bg-gray-50 p-4 text-right font-bold text-gray-800 flex justify-between items-center hover:bg-gray-100" onclick="toggleAccordion('addElements')">
+                        <span>2. إضافة عناصر للتصميم (+)</span>
+                        <svg class="w-5 h-5 transition-transform" id="icon-addElements" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="addElements" class="accordion-content px-4 py-4 space-y-4 border-t border-gray-100">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="addTextBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ نص</button>
+                            <button id="addImageBtn" class="bg-green-100 hover:bg-green-200 text-green-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ صورة</button>
+                            <button id="addRectBtn" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ مربع</button>
+                            <button id="addCircleBtn" class="bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold py-2 px-2 rounded-lg text-sm flex justify-center items-center gap-1" disabled>+ دائرة</button>
+                        </div>
+                        <input type="file" id="newImageUpload" accept="image/*" class="hidden">
+                        
+                        <!-- مساعد الذكاء الاصطناعي -->
+                        <div class="mt-2 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
+                            <label class="block text-xs font-bold text-purple-800 mb-2">✨ مساعد الذكاء الاصطناعي</label>
+                            <textarea id="aiPrompt" rows="1" placeholder="اكتب ما تريد توليده (نص إعلاني، صورة...)" class="w-full p-2 border border-purple-200 rounded text-xs focus:ring-1 focus:ring-purple-400 mb-2"></textarea>
+                            <div class="flex gap-2">
+                                <button id="aiTextBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs py-1.5 rounded" disabled>توليد نص</button>
+                                <button id="aiImageBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs py-1.5 rounded" disabled>توليد صورة</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تبويب 3: خصائص العنصر المحدد -->
+                <div class="border border-blue-200 rounded-xl overflow-hidden bg-blue-50 shadow-sm transition-opacity duration-300 opacity-50" id="propertiesWrapper">
+                    <button class="w-full bg-blue-100 p-3 text-right font-bold text-blue-900 flex justify-between items-center" onclick="toggleAccordion('elementProps')">
+                        <span>3. خصائص العنصر المحدد</span>
+                        <svg class="w-5 h-5 transition-transform" id="icon-elementProps" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="elementProps" class="accordion-content open px-4 py-4 space-y-3 border-t border-blue-200 pointer-events-none">
+                        
+                        <div id="textOnlyProps" class="hidden space-y-2">
+                            <textarea id="elText" rows="2" class="w-full p-2 border rounded text-sm"></textarea>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs text-gray-600">الخط:</label>
+                                    <select id="elFont" class="w-full p-1.5 border rounded text-xs">
+                                        <option value="Cairo">Cairo (كايرو)</option>
+                                        <option value="Tajawal">Tajawal (تجوال)</option>
+                                        <option value="Almarai">Almarai (المراعي)</option>
+                                        <option value="Amiri">Amiri (أميري)</option>
+                                        <option value="Arial">Arial (عادي)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-600">اللون:</label>
+                                    <input type="color" id="elColor" class="w-full h-7 rounded cursor-pointer border">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="shapeOnlyProps" class="hidden grid grid-cols-2 gap-2">
+                            <div><label class="text-xs text-gray-600">لون التعبئة:</label><input type="color" id="elFill" class="w-full h-7 rounded border"></div>
+                            <div><label class="text-xs text-gray-600">لون الإطار:</label><input type="color" id="elStroke" class="w-full h-7 rounded border"></div>
+                            <div class="col-span-2"><label class="text-xs text-gray-600">سُمك الإطار:</label><input type="range" id="elStrokeW" min="0" max="50" class="w-full h-1 bg-gray-200 rounded"></div>
+                        </div>
+
+                        <div id="imageFiltersProps" class="hidden space-y-2 border-t border-blue-200 pt-2 mt-2">
+                            <label class="text-xs font-semibold text-gray-700">فلاتر الصورة:</label>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>سطوع <input type="range" id="elBright" min="0" max="200" value="100" class="w-full h-1"></div>
+                                <div>تباين <input type="range" id="elCont" min="0" max="200" value="100" class="w-full h-1"></div>
+                                <div class="col-span-2">تمويه (Blur) <input type="range" id="elBlur" min="0" max="20" value="0" class="w-full h-1"></div>
+                            </div>
+                        </div>
+
+                        <div id="commonProps" class="space-y-2 border-t border-blue-200 pt-2 mt-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs text-gray-600">الحجم/العرض:</label><input type="range" id="elSize" min="10" max="1500" class="w-full h-1 bg-blue-200 rounded"></div>
+                                <div><label class="text-xs text-gray-600">الشفافية:</label><input type="range" id="elOpacity" min="0.1" max="1" step="0.1" class="w-full h-1 bg-blue-200 rounded"></div>
+                            </div>
+                            <div class="flex justify-end pt-2">
+                                <button id="deleteElBtn" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded text-xs font-bold">🗑️ حذف العنصر</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- تبويب 4: لوحة الطبقات (Layers) -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <button class="w-full bg-gray-50 p-4 text-right font-bold text-gray-800 flex justify-between items-center hover:bg-gray-100" onclick="toggleAccordion('layersPanel')">
+                        <span>4. إدارة الطبقات (Layers)</span>
+                        <svg class="w-5 h-5 transition-transform transform rotate-180" id="icon-layersPanel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="layersPanel" class="accordion-content px-2 py-2 border-t border-gray-100 bg-gray-50 custom-scrollbar overflow-y-auto" style="max-height: 250px;">
+                        <ul id="layersList" class="space-y-1">
+                            <li class="text-xs text-center text-gray-400 py-4">لا توجد عناصر مضافة بعد</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- منطقة المعاينة (اليسار) -->
+            <div class="lg:col-span-8 space-y-4">
+                <!-- أشرطة الأدوات العلوية للمعاينة -->
+                <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                    <div class="flex gap-1">
+                        <button id="undoBtn" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-700 disabled:opacity-50" disabled title="تراجع"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
+                        <button id="redoBtn" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-700 disabled:opacity-50" disabled title="إعادة"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg></button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="psdBtn" class="bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 disabled:opacity-50" disabled>PSD</button>
+                        <button id="shareBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 disabled:opacity-50" disabled>مشاركة</button>
+                        <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-1.5 rounded-lg text-sm flex items-center gap-1 disabled:opacity-50 shadow-md" disabled>حفظ و تحميل</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[500px] p-2 relative overflow-hidden shadow-inner">
+                    <div id="placeholderText" class="text-gray-400 text-center">
+                        <svg class="h-16 w-16 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <p class="text-sm">ابدأ بإعداد مساحة العمل من القائمة الجانبية</p>
+                    </div>
+                    <canvas id="previewCanvas" style="touch-action: none; cursor: crosshair;"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // === وظائف واجهة المستخدم (Accordion) ===
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id);
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                icon.classList.remove('rotate-180');
+            } else {
+                content.classList.add('open');
+                icon.classList.add('rotate-180');
+            }
+        }
+
+        // إغلاق التبويبات وفتحها افتراضياً
+        document.getElementById('addElements').classList.remove('open');
+        document.getElementById('layersPanel').classList.add('open');
+
+        // === المتغيرات ===
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // الحالة الأساسية (State)
+        let elements = []; 
+        let selectedElement = null; 
+        let selectedFiles = [];
+        let currentPreviewImage = null;
+        let isBlankCanvas = false;
+        let canvasBgColor = '#ffffff';
+        let bgFilters = { brightness: 100, contrast: 100, saturation: 100, blur: 0 };
+        
+        let historyStack = [];
+        let redoStack = [];
+        let isDragging = false;
+        let isEditingInput = false;
+        let startX, startY;
+        const PIXELS_PER_CM = 118.11;
+
+        // استدعاء عناصر الـ DOM
+        const els = {
+            imgUpload: document.getElementById('imageUpload'),
+            presetSizes: document.getElementById('presetSizes'), customW: document.getElementById('customW'), customH: document.getElementById('customH'),
+            bgColor: document.getElementById('bgColor'), createBlankBtn: document.getElementById('createBlankBtn'),
+            bgBrightness: document.getElementById('bgBrightness'), bgContrast: document.getElementById('bgContrast'), bgSaturation: document.getElementById('bgSaturation'), bgBlur: document.getElementById('bgBlur'), bgFiltersPanel: document.getElementById('bgFiltersPanel'),
+            
+            addText: document.getElementById('addTextBtn'), addImg: document.getElementById('addImageBtn'), addRect: document.getElementById('addRectBtn'), addCircle: document.getElementById('addCircleBtn'), newImgUpload: document.getElementById('newImageUpload'),
+            aiPrompt: document.getElementById('aiPrompt'), aiText: document.getElementById('aiTextBtn'), aiImg: document.getElementById('aiImageBtn'),
+            
+            propsWrap: document.getElementById('propertiesWrapper'), propsContent: document.getElementById('elementProps'),
+            textProps: document.getElementById('textOnlyProps'), shapeProps: document.getElementById('shapeOnlyProps'), imgProps: document.getElementById('imageFiltersProps'), commonProps: document.getElementById('commonProps'),
+            
+            elText: document.getElementById('elText'), elFont: document.getElementById('elFont'), elColor: document.getElementById('elColor'),
+            elFill: document.getElementById('elFill'), elStroke: document.getElementById('elStroke'), elStrokeW: document.getElementById('elStrokeW'),
+            elBright: document.getElementById('elBright'), elCont: document.getElementById('elCont'), elBlur: document.getElementById('elBlur'),
+            elSize: document.getElementById('elSize'), elOpacity: document.getElementById('elOpacity'), delBtn: document.getElementById('deleteElBtn'),
+            
+            layersList: document.getElementById('layersList'),
+            
+            undo: document.getElementById('undoBtn'), redo: document.getElementById('redoBtn'), psd: document.getElementById('psdBtn'), share: document.getElementById('shareBtn'), download: document.getElementById('downloadBtn'),
+            saveDraft: document.getElementById('saveDraftBtn'), loadDraft: document.getElementById('loadDraftBtn'),
+            placeholder: document.getElementById('placeholderText')
+        };
+
+        // === التهيئة ومستمعي الأحداث ===
+
+        // 1. الخلفية والمساحة
+        els.imgUpload.addEventListener('change', handleBgUpload);
+        els.presetSizes.addEventListener('change', (e) => {
+            const disabled = !!e.target.value;
+            els.customW.disabled = disabled; els.customH.disabled = disabled;
+            if(disabled){ els.customW.value=''; els.customH.value=''; }
+        });
+        els.createBlankBtn.addEventListener('click', createBlankCanvas);
+        
+        ['input', 'change'].forEach(evt => {
+            els.bgColor.addEventListener(evt, () => { if(isBlankCanvas){ canvasBgColor=els.bgColor.value; drawPreview(); }});
+            els.bgBrightness.addEventListener(evt, () => { bgFilters.brightness = els.bgBrightness.value; drawPreview(); });
+            els.bgContrast.addEventListener(evt, () => { bgFilters.contrast = els.bgContrast.value; drawPreview(); });
+            els.bgSaturation.addEventListener(evt, () => { bgFilters.saturation = els.bgSaturation.value; drawPreview(); });
+            els.bgBlur.addEventListener(evt, () => { bgFilters.blur = els.bgBlur.value; drawPreview(); });
+        });
+
+        // 2. إضافة العناصر
+        els.addText.addEventListener('click', () => addElement('text'));
+        els.addRect.addEventListener('click', () => addElement('rect'));
+        els.addCircle.addEventListener('click', () => addElement('circle'));
+        els.addImg.addEventListener('click', () => els.newImgUpload.click());
+        els.newImgUpload.addEventListener('change', handleImageElementUpload);
+        els.aiText.addEventListener('click', generateAIText);
+        els.aiImg.addEventListener('click', generateAIImage);
+
+        // 3. خصائص العناصر
+        const propInputs = [els.elText, els.elFont, els.elColor, els.elFill, els.elStroke, els.elStrokeW, els.elBright, els.elCont, els.elBlur, els.elSize, els.elOpacity];
+        propInputs.forEach(input => {
+            input.addEventListener('focus', () => { if(!isEditingInput) { saveState(); isEditingInput = true; }});
+            input.addEventListener('blur', () => isEditingInput = false);
+            input.addEventListener('input', updateSelectedElementProps);
+        });
+        els.delBtn.addEventListener('click', () => { saveState(); elements = elements.filter(e => e.id !== selectedElement.id); selectedElement = null; updateUI(); drawPreview(); });
+
+        // 4. أزرار التحكم
+        els.undo.addEventListener('click', undo);
+        els.redo.addEventListener('click', redo);
+        els.download.addEventListener('click', downloadFinal);
+        els.psd.addEventListener('click', exportPSD);
+        els.share.addEventListener('click', shareImage);
+        els.saveDraft.addEventListener('click', saveToLocalStorage);
+        els.loadDraft.addEventListener('click', loadFromLocalStorage);
+
+        // 5. أحداث الكانفاس
+        canvas.addEventListener('mousedown', startDrag); canvas.addEventListener('mousemove', drag); canvas.addEventListener('mouseup', endDrag); canvas.addEventListener('mouseleave', endDrag);
+        canvas.addEventListener('touchstart', startDrag, { passive: false }); canvas.addEventListener('touchmove', drag, { passive: false }); canvas.addEventListener('touchend', endDrag);
+
+        // اختصارات الكيبورد
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+                if (e.key === 'y') { e.preventDefault(); redo(); }
+            }
+            if(e.key === 'Delete' && selectedElement && !isEditingInput) { saveState(); elements = elements.filter(el => el.id !== selectedElement.id); selectedElement = null; updateUI(); drawPreview(); }
+        });
+
+
+        // === الوظائف الأساسية ===
+
+        function enableTools() {
+            [els.addText, els.addImg, els.addRect, els.addCircle, els.aiText, els.aiImg, els.download, els.psd, els.share].forEach(b => {
+                b.disabled = false; b.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+            els.placeholder.style.display = 'none';
+            canvas.style.display = 'block';
+            els.bgFiltersPanel.classList.remove('hidden');
+        }
+
+        function handleBgUpload(e) {
+            selectedFiles = Array.from(e.target.files);
+            if (!selectedFiles.length) return;
+            saveState();
+            isBlankCanvas = false;
+            
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    currentPreviewImage = img;
+                    canvas.width = img.width; canvas.height = img.height;
+                    enableTools();
+                    if(elements.length === 0) toggleAccordion('addElements'); // افتح تبويب الإضافة للمستخدم الجديد
+                    drawPreview();
+                }
+                img.src = ev.target.result;
+            }
+            reader.readAsDataURL(selectedFiles[0]);
+        }
+
+        function createBlankCanvas() {
+            let w, h;
+            if (els.presetSizes.value) {
+                [w, h] = els.presetSizes.value.split('x').map(Number);
+            } else if (els.customW.value && els.customH.value) {
+                w = Math.round(parseFloat(els.customW.value) * PIXELS_PER_CM);
+                h = Math.round(parseFloat(els.customH.value) * PIXELS_PER_CM);
+            } else { return alert('أدخل المقاسات أو اختر مقاس جاهز'); }
+
+            saveState();
+            isBlankCanvas = true; selectedFiles = []; canvasBgColor = els.bgColor.value;
+            canvas.width = w; canvas.height = h;
+            enableTools();
+            drawPreview();
+        }
+
+        function addElement(type) {
+            if (!currentPreviewImage && !isBlankCanvas) return;
+            saveState();
+            
+            const el = {
+                id: Date.now(), type: type,
+                x: canvas.width / 2, y: canvas.height / 2,
+                opacity: 1, isVisible: true, name: `عنصر جديد ${elements.length + 1}`
+            };
+
+            const minDim = Math.min(canvas.width, canvas.height);
+
+            if (type === 'text') {
+                el.text = 'نص جديد'; el.color = '#000000'; el.font = 'Cairo'; el.size = Math.max(minDim * 0.05, 30);
+                el.name = 'نص: نص جديد';
+            } else if (type === 'rect') {
+                el.size = Math.max(minDim * 0.15, 100); el.fill = '#3b82f6'; el.stroke = '#1e3a8a'; el.strokeW = 0;
+                el.name = 'شكل: مربع';
+            } else if (type === 'circle') {
+                el.size = Math.max(minDim * 0.15, 100); el.fill = '#ec4899'; el.stroke = '#9d174d'; el.strokeW = 0;
+                el.name = 'شكل: دائرة';
+            }
+
+            elements.push(el); selectedElement = el;
+            updateUI(); drawPreview();
+        }
+
+        function handleImageElementUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            saveState();
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const el = {
+                        id: Date.now(), type: 'image', image: img,
+                        x: canvas.width/2, y: canvas.height/2, size: Math.max(canvas.width * 0.15, 100), opacity: 1, isVisible: true,
+                        filters: { bright: 100, cont: 100, blur: 0 },
+                        name: 'صورة: ' + file.name.substring(0,10)
+                    };
+                    elements.push(el); selectedElement = el;
+                    updateUI(); drawPreview();
+                }; img.src = ev.target.result;
+            }; reader.readAsDataURL(file);
+            els.newImgUpload.value = '';
+        }
+
+        function updateSelectedElementProps() {
+            if (!selectedElement) return;
+            const el = selectedElement;
+            el.size = parseInt(els.elSize.value);
+            el.opacity = parseFloat(els.elOpacity.value);
+
+            if (el.type === 'text') {
+                el.text = els.elText.value; el.font = els.elFont.value; el.color = els.elColor.value;
+                el.name = 'نص: ' + (el.text.split('\n')[0].substring(0, 15) || 'فارغ');
+            } else if (el.type === 'rect' || el.type === 'circle') {
+                el.fill = els.elFill.value; el.stroke = els.elStroke.value; el.strokeW = parseInt(els.elStrokeW.value);
+            } else if (el.type === 'image') {
+                el.filters = { bright: els.elBright.value, cont: els.elCont.value, blur: els.elBlur.value };
+            }
+            renderLayersPanel(); // تحديث الأسماء في قائمة الطبقات
+            drawPreview();
+        }
+
+        function updateUI() {
+            // تحديث لوحة الخصائص
+            if (!selectedElement) {
+                els.propsWrap.classList.add('opacity-50'); els.propsContent.classList.add('pointer-events-none');
+                els.textProps.classList.add('hidden'); els.shapeProps.classList.add('hidden'); els.imgProps.classList.add('hidden'); els.commonProps.classList.add('hidden');
+            } else {
+                els.propsWrap.classList.remove('opacity-50'); els.propsContent.classList.remove('pointer-events-none');
+                els.commonProps.classList.remove('hidden');
+                els.elSize.value = selectedElement.size; els.elSize.max = Math.max(canvas.width, canvas.height);
+                els.elOpacity.value = selectedElement.opacity;
+
+                els.textProps.classList.add('hidden'); els.shapeProps.classList.add('hidden'); els.imgProps.classList.add('hidden');
+
+                if (selectedElement.type === 'text') {
+                    els.textProps.classList.remove('hidden');
+                    els.elText.value = selectedElement.text; els.elFont.value = selectedElement.font || 'Cairo'; els.elColor.value = selectedElement.color;
+                } else if (selectedElement.type === 'rect' || selectedElement.type === 'circle') {
+                    els.shapeProps.classList.remove('hidden');
+                    els.elFill.value = selectedElement.fill; els.elStroke.value = selectedElement.stroke; els.elStrokeW.value = selectedElement.strokeW;
+                } else if (selectedElement.type === 'image') {
+                    els.imgProps.classList.remove('hidden');
+                    els.elBright.value = selectedElement.filters?.bright || 100; els.elCont.value = selectedElement.filters?.cont || 100; els.elBlur.value = selectedElement.filters?.blur || 0;
+                }
+                
+                // فتح تبويب الخصائص تلقائياً عند تحديد عنصر
+                if(!document.getElementById('elementProps').classList.contains('open')) toggleAccordion('elementProps');
+            }
+            renderLayersPanel();
+        }
+
+        // === إدارة الطبقات (Layers) ===
+        function renderLayersPanel() {
+            els.layersList.innerHTML = '';
+            if (elements.length === 0) {
+                els.layersList.innerHTML = '<li class="text-xs text-center text-gray-400 py-4">لا توجد عناصر مضافة بعد</li>';
+                return;
+            }
+            
+            // نعرض الطبقات بالعكس (الأحدث فوق)
+            const reversedElements = [...elements].reverse();
+            
+            reversedElements.forEach((el, index) => {
+                const actualIndex = elements.length - 1 - index; // الإندكس الأصلي في المصفوفة
+                const li = document.createElement('li');
+                li.className = `flex justify-between items-center p-2 rounded text-xs border cursor-pointer transition ${selectedElement?.id === el.id ? 'bg-blue-100 border-blue-300 shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'}`;
+                
+                // أيقونة نوع العنصر
+                let iconStr = '📄';
+                if(el.type === 'image') iconStr = '🖼️';
+                if(el.type === 'rect') iconStr = '🟦';
+                if(el.type === 'circle') iconStr = '🔵';
+
+                // محتوى الطبقة
+                li.innerHTML = `
+                    <div class="flex items-center gap-2 flex-1 overflow-hidden" onclick="selectLayer(${el.id})">
+                        <span class="opacity-70">${iconStr}</span>
+                        <span class="truncate font-semibold ${!el.isVisible ? 'line-through text-gray-400' : 'text-gray-700'}">${el.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="toggleVisibility(${el.id}, event)" class="p-1 hover:bg-gray-200 rounded" title="إخفاء/إظهار">
+                            ${el.isVisible ? '👁️' : '🔒'}
+                        </button>
+                        <div class="flex flex-col">
+                            <button onclick="moveLayer(${actualIndex}, 1, event)" class="text-[10px] bg-gray-200 hover:bg-gray-300 px-1 rounded-t leading-none" title="تقديم للأمام" ${actualIndex === elements.length-1 ? 'disabled class="opacity-30"' : ''}>▲</button>
+                            <button onclick="moveLayer(${actualIndex}, -1, event)" class="text-[10px] bg-gray-200 hover:bg-gray-300 px-1 rounded-b leading-none" title="إرجاع للخلف" ${actualIndex === 0 ? 'disabled class="opacity-30"' : ''}>▼</button>
+                        </div>
+                    </div>
+                `;
+                els.layersList.appendChild(li);
+            });
+        }
+
+        window.selectLayer = function(id) { selectedElement = elements.find(e => e.id === id); updateUI(); drawPreview(); };
+        window.toggleVisibility = function(id, e) { e.stopPropagation(); saveState(); const el = elements.find(e => e.id === id); el.isVisible = !el.isVisible; if(!el.isVisible && selectedElement?.id === id) selectedElement = null; updateUI(); drawPreview(); };
+        window.moveLayer = function(index, direction, e) {
+            e.stopPropagation(); saveState();
+            const newIndex = index + direction;
+            if(newIndex < 0 || newIndex >= elements.length) return;
+            // تبديل الأماكن
+            const temp = elements[index];
+            elements[index] = elements[newIndex];
+            elements[newIndex] = temp;
+            renderLayersPanel(); drawPreview();
+        };
+
+        // === رسم الكانفاس ===
+        function buildFiltersString(f) {
+            if(!f) return 'none';
+            return `brightness(${f.bright || 100}%) contrast(${f.cont || 100}%) saturate(${f.saturation || 100}%) blur(${f.blur || 0}px)`;
+        }
+
+        function drawCore(targetCtx, w, h, isFinalExport = false) {
+            targetCtx.clearRect(0, 0, w, h);
+            
+            // رسم الخلفية
+            targetCtx.filter = buildFiltersString(bgFilters);
+            if (isBlankCanvas) {
+                targetCtx.fillStyle = canvasBgColor; targetCtx.fillRect(0, 0, w, h);
+            } else if (currentPreviewImage) {
+                targetCtx.drawImage(currentPreviewImage, 0, 0, w, h);
+            }
+            targetCtx.filter = 'none';
+
+            // مقياس الرسم للتحميل النهائي
+            const scale = w / canvas.width;
+
+            // رسم العناصر
+            elements.forEach(el => {
+                if (!el.isVisible) return;
+                targetCtx.globalAlpha = el.opacity;
+                const fx = el.x * scale, fy = el.y * scale, fSize = el.size * scale;
+                
+                targetCtx.save(); // حفظ حالة الكانفاس
+                
+                if (el.type === 'text') {
+                    targetCtx.font = `bold ${fSize}px ${el.font || 'Cairo'}, sans-serif`;
+                    targetCtx.fillStyle = el.color;
+                    targetCtx.textAlign = 'center'; targetCtx.textBaseline = 'middle';
+                    
+                    const lines = el.text.split('\n');
+                    const lh = fSize * 1.2;
+                    let sY = fy - ((lines.length - 1) * lh) / 2;
+                    let maxW = 0;
+                    lines.forEach((line, i) => {
+                        targetCtx.fillText(line, fx, sY + (i * lh));
+                        const m = targetCtx.measureText(line).width; if(m > maxW) maxW = m;
+                    });
+                    if(!isFinalExport) { el.width = maxW/scale; el.height = (lines.length*lh)/scale; }
+                
+                } else if (el.type === 'rect') {
+                    targetCtx.fillStyle = el.fill; targetCtx.strokeStyle = el.stroke; targetCtx.lineWidth = (el.strokeW || 0) * scale;
+                    targetCtx.beginPath();
+                    targetCtx.rect(fx - fSize/2, fy - fSize/2, fSize, fSize);
+                    targetCtx.fill(); if(el.strokeW > 0) targetCtx.stroke();
+                    if(!isFinalExport) { el.width = el.size; el.height = el.size; }
+                
+                } else if (el.type === 'circle') {
+                    targetCtx.fillStyle = el.fill; targetCtx.strokeStyle = el.stroke; targetCtx.lineWidth = (el.strokeW || 0) * scale;
+                    targetCtx.beginPath();
+                    targetCtx.arc(fx, fy, fSize/2, 0, Math.PI * 2);
+                    targetCtx.fill(); if(el.strokeW > 0) targetCtx.stroke();
+                    if(!isFinalExport) { el.width = el.size; el.height = el.size; }
+                
+                } else if (el.type === 'image') {
+                    targetCtx.filter = buildFiltersString(el.filters);
+                    const asp = el.image.width / el.image.height;
+                    const wImg = asp * fSize, hImg = fSize;
+                    targetCtx.drawImage(el.image, fx - wImg/2, fy - hImg/2, wImg, hImg);
+                    targetCtx.filter = 'none';
+                    if(!isFinalExport) { el.width = wImg/scale; el.height = hImg/scale; }
+                }
+
+                targetCtx.restore();
+
+                // رسم إطار التحديد في وضع المعاينة فقط
+                if (!isFinalExport && el === selectedElement) {
+                    targetCtx.globalAlpha = 1; targetCtx.strokeStyle = '#3b82f6'; targetCtx.lineWidth = 2; targetCtx.setLineDash([8, 8]);
+                    const pad = 10;
+                    targetCtx.strokeRect(el.x - el.width/2 - pad, el.y - el.height/2 - pad, el.width + pad*2, el.height + pad*2);
+                    targetCtx.setLineDash([]);
+                }
+            });
+            targetCtx.globalAlpha = 1;
+        }
+
+        function drawPreview() { if(currentPreviewImage || isBlankCanvas) drawCore(ctx, canvas.width, canvas.height, false); }
+
+        // === السحب والإفلات ===
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+        }
+
+        function startDrag(e) {
+            if (!currentPreviewImage && !isBlankCanvas) return;
+            if (e.type === 'touchstart') e.preventDefault();
+            const pos = getMousePos(e);
+            startX = pos.x; startY = pos.y;
+            
+            let clicked = false;
+            // البحث من الأعلى للأسفل
+            for (let i = elements.length - 1; i >= 0; i--) {
+                const el = elements[i];
+                if(!el.isVisible) continue;
+                const pad = 15;
+                if (pos.x >= (el.x - el.width/2 - pad) && pos.x <= (el.x + el.width/2 + pad) && pos.y >= (el.y - el.height/2 - pad) && pos.y <= (el.y + el.height/2 + pad)) {
+                    if (selectedElement !== el) { selectedElement = el; updateUI(); }
+                    saveState(); isDragging = true; clicked = true;
+                    // لا ننقل العنصر للمقدمة هنا لأن الطبقات يديرها المستخدم من اللوحة الآن
+                    break;
+                }
+            }
+            if (!clicked) { selectedElement = null; updateUI(); }
+            drawPreview();
+        }
+
+        function drag(e) {
+            if (!isDragging || !selectedElement) return;
+            if (e.type === 'touchmove') e.preventDefault();
+            const pos = getMousePos(e);
+            selectedElement.x += pos.x - startX; selectedElement.y += pos.y - startY;
+            startX = pos.x; startY = pos.y;
+            drawPreview();
+        }
+        function endDrag() { isDragging = false; }
+
+        // === الذكاء الاصطناعي ===
+        const apiKey = ""; 
+
+        async function fetchAI(url, payload) {
+            let delay = 1000;
+            for (let i=0; i<5; i++) {
+                try {
+                    const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                    if(!res.ok) throw new Error(); return await res.json();
+                } catch(e) { if(i===4) throw e; await new Promise(r=>setTimeout(r, delay)); delay*=2; }
+            }
+        }
+
+        async function generateAIText() {
+            if(!els.aiPrompt.value.trim()) return alert('اكتب وصفاً');
+            els.aiText.disabled = true; els.aiText.textContent = '...';
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const res = await fetchAI(url, { contents: [{parts: [{text: `اكتب نص قصير جدا كمحتوى تصميم: ${els.aiPrompt.value}`}]}] });
+                const text = res.candidates?.[0]?.content?.parts?.[0]?.text;
+                if(text) { addElement('text'); elements[elements.length-1].text = text.trim(); updateUI(); drawPreview(); els.aiPrompt.value=''; }
+            } catch(e) { alert('خطأ في توليد النص'); } finally { els.aiText.disabled=false; els.aiText.textContent='توليد نص'; }
+        }
+
+        async function generateAIImage() {
+            if(!els.aiPrompt.value.trim()) return alert('اكتب وصفاً');
+            els.aiImg.disabled = true; els.aiImg.textContent = '...';
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+                const res = await fetchAI(url, { instances: {prompt: els.aiPrompt.value}, parameters: {sampleCount:1} });
+                const b64 = res.predictions?.[0]?.bytesBase64Encoded;
+                if(b64) {
+                    saveState();
+                    const img = new Image();
+                    img.onload = () => {
+                        elements.push({ id: Date.now(), type: 'image', image: img, x: canvas.width/2, y: canvas.height/2, size: 200, opacity: 1, isVisible: true, name: 'صورة ذكاء اصطناعي' });
+                        selectedElement = elements[elements.length-1]; updateUI(); drawPreview(); els.aiPrompt.value='';
+                    }; img.src = `data:image/png;base64,${b64}`;
+                }
+            } catch(e) { alert('خطأ في توليد الصورة'); } finally { els.aiImg.disabled=false; els.aiImg.textContent='توليد صورة'; }
+        }
+
+        // === الحفظ والتصدير ===
+        
+        function saveState(clearRedo = true) {
+            historyStack.push({
+                elements: elements.map(el => ({ ...el, image: el.image ? el.image : null })), // نحتفظ بكائن الصورة
+                isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters},
+                previewImageSrc: currentPreviewImage ? currentPreviewImage.src : null,
+                w: canvas.width, h: canvas.height
+            });
+            if(historyStack.length > 20) historyStack.shift();
+            if(clearRedo) redoStack = [];
+            els.undo.disabled = false; els.redo.disabled = true;
+        }
+
+        function undo() {
+            if(!historyStack.length) return;
+            redoStack.push({ elements: elements.map(e=>({...e})), isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters}, previewImageSrc: currentPreviewImage?.src, w: canvas.width, h: canvas.height });
+            applyState(historyStack.pop());
+            els.redo.disabled = false; els.undo.disabled = historyStack.length===0;
+        }
+
+        function redo() {
+            if(!redoStack.length) return;
+            historyStack.push({ elements: elements.map(e=>({...e})), isBlankCanvas, canvasBgColor, bgFilters: {...bgFilters}, previewImageSrc: currentPreviewImage?.src, w: canvas.width, h: canvas.height });
+            applyState(redoStack.pop());
+            els.undo.disabled = false; els.redo.disabled = redoStack.length===0;
+        }
+
+        function applyState(s) {
+            elements = s.elements.map(e=>({...e})); isBlankCanvas = s.isBlankCanvas; canvasBgColor = s.canvasBgColor; bgFilters = {...s.bgFilters};
+            canvas.width = s.w; canvas.height = s.h; selectedElement = null;
+            
+            // تحديث واجهة الفلاتر والخلفية
+            els.bgColor.value = canvasBgColor; els.bgBrightness.value = bgFilters.bright || 100; els.bgContrast.value = bgFilters.cont || 100; els.bgSaturation.value = bgFilters.saturation || 100; els.bgBlur.value = bgFilters.blur || 0;
+
+            if(s.previewImageSrc && !isBlankCanvas) {
+                const img = new Image(); img.onload = () => { currentPreviewImage = img; drawPreview(); }; img.src = s.previewImageSrc;
+            } else { currentPreviewImage = null; drawPreview(); }
+            updateUI();
+        }
+
+        async function downloadFinal() {
+            if(!currentPreviewImage && !isBlankCanvas) return;
+            const fCanvas = document.createElement('canvas'); const fCtx = fCanvas.getContext('2d');
+            
+            if(selectedFiles.length <= 1) {
+                drawCore(fCtx, canvas.width, canvas.height, true);
+                const link = document.createElement('a'); link.download = 'Sawa_Design.png'; link.href = fCanvas.toDataURL('image/png'); link.click();
+            } else {
+                // حفظ متعدد للصور بصيغة ZIP
+                els.download.disabled = true; els.download.textContent = 'جاري التحضير...';
+                const zip = new JSZip(); const folder = zip.folder("Sawa_Designs");
+                for(let file of selectedFiles) {
+                    await new Promise(res => {
+                        const r = new FileReader();
+                        r.onload = (ev) => {
+                            const img = new Image(); img.onload = () => {
+                                currentPreviewImage = img; // تغيير الخلفية مؤقتا
+                                canvas.width = img.width; canvas.height = img.height;
+                                drawCore(fCtx, canvas.width, canvas.height, true);
+                                fCanvas.toBlob(b => { folder.file("Sawa_" + file.name, b); res(); }, 'image/jpeg', 0.95);
+                            }; img.src = ev.target.result;
+                        }; r.readAsDataURL(file);
+                    });
+                }
+                const content = await zip.generateAsync({type:"blob"});
+                const link = document.createElement('a'); link.href = URL.createObjectURL(content); link.download = "Sawa_Designs_Multi.zip"; link.click();
+                
+                // إعادة الصورة الأولى كخلفية بعد الانتهاء
+                const r = new FileReader(); r.onload = (ev)=>{ const i = new Image(); i.onload=()=>{ currentPreviewImage=i; canvas.width=i.width; canvas.height=i.height; drawPreview(); els.download.disabled=false; els.download.innerHTML='حفظ و تحميل'; }; i.src=ev.target.result; }; r.readAsDataURL(selectedFiles[0]);
+            }
+        }
+
+        async function shareImage() {
+            if(!currentPreviewImage && !isBlankCanvas) return;
+            try {
+                const fCanvas = document.createElement('canvas'); drawCore(fCanvas.getContext('2d'), canvas.width, canvas.height, true);
+                fCanvas.toBlob(async (blob) => {
+                    const f = new File([blob], "Sawa_Design.png", { type: "image/png" });
+                    if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ title: 'تصميمي من سوا', files: [f] });
+                    else alert('متصفحك لا يدعم المشاركة المباشرة. احفظ الصورة أولاً.');
+                }, 'image/png');
+            } catch(e) { console.error(e); }
+        }
+
+        // حفظ PSD مع الفلاتر
+        function exportPSD() {
+            if(!currentPreviewImage && !isBlankCanvas || typeof agPsd === 'undefined') return alert('الرجاء الانتظار قليلاً');
+            const origHtml = els.psd.innerHTML; els.psd.disabled = true; els.psd.innerHTML = 'معالجة...';
+
+            setTimeout(() => {
+                try {
+                    const w = Math.max(1, canvas.width), h = Math.max(1, canvas.height);
+                    const children = [];
+                    
+                    // الخلفية كصورة مدمجة بفلاترها
+                    const bgCnv = document.createElement('canvas'); bgCnv.width=w; bgCnv.height=h; const bgC = bgCnv.getContext('2d');
+                    bgC.filter = buildFiltersString(bgFilters);
+                    if(isBlankCanvas) { bgC.fillStyle = canvasBgColor; bgC.fillRect(0,0,w,h); } else { bgC.drawImage(currentPreviewImage,0,0,w,h); }
+                    children.push({ name: 'الخلفية', canvas: bgCnv });
+
+                    // العناصر
+                    elements.forEach(el => {
+                        if(!el.isVisible) return;
+                        const elCnv = document.createElement('canvas'); elCnv.width=w; elCnv.height=h; const eC = elCnv.getContext('2d');
+                        eC.globalAlpha = el.opacity;
+                        if(el.type==='text') {
+                            eC.font = `bold ${el.size}px ${el.font||'Cairo'}, sans-serif`; eC.fillStyle = el.color; eC.textAlign = 'center'; eC.textBaseline = 'middle';
+                            const lines = el.text.split('\n'); const lh = el.size*1.2; let sY = el.y - ((lines.length-1)*lh)/2;
+                            lines.forEach((line, i) => eC.fillText(line, el.x, sY + (i*lh)));
+                        } else if(el.type==='rect') {
+                            eC.fillStyle = el.fill; eC.strokeStyle = el.stroke; eC.lineWidth = el.strokeW||0;
+                            eC.fillRect(el.x-el.size/2, el.y-el.size/2, el.size, el.size); if(el.strokeW>0) eC.strokeRect(el.x-el.size/2, el.y-el.size/2, el.size, el.size);
+                        } else if(el.type==='circle') {
+                            eC.fillStyle = el.fill; eC.strokeStyle = el.stroke; eC.lineWidth = el.strokeW||0; eC.beginPath(); eC.arc(el.x, el.y, el.size/2, 0, Math.PI*2); eC.fill(); if(el.strokeW>0) eC.stroke();
+                        } else if(el.type==='image') {
+                            eC.filter = buildFiltersString(el.filters);
+                            const wImg = (el.image.width/el.image.height)*el.size;
+                            eC.drawImage(el.image, el.x-wImg/2, el.y-el.size/2, wImg, el.size);
+                        }
+                        children.push({ name: el.name, canvas: elCnv });
+                    });
+
+                    const buffer = agPsd.writePsd({ width: w, height: h, children: children });
+                    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+                    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = "Sawa_Design_Layers.psd"; link.click();
+                } catch(e) { alert('حدث خطأ أثناء تصدير PSD'); }
+                finally { els.psd.disabled = false; els.psd.innerHTML = origHtml; }
+            }, 100);
+        }
+
+        // === التخزين المحلي (Save/Load Draft) ===
+        function imageToBase64(img) {
+            const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+            c.getContext('2d').drawImage(img, 0, 0); return c.toDataURL('image/jpeg', 0.8); // استخدام جودة 80% لتوفير المساحة
+        }
+
+        function saveToLocalStorage() {
+            if(!currentPreviewImage && !isBlankCanvas) return alert('لا يوجد تصميم لحفظه');
+            try {
+                els.saveDraft.textContent = 'جاري الحفظ...';
+                
+                const saveData = {
+                    w: canvas.width, h: canvas.height, isBlankCanvas, canvasBgColor, bgFilters,
+                    bgImageSrc: currentPreviewImage && !isBlankCanvas ? imageToBase64(currentPreviewImage) : null,
+                    elements: elements.map(el => ({
+                        ...el,
+                        image: el.image ? imageToBase64(el.image) : null // تحويل الصور لنصوص
+                    }))
+                };
+                
+                localStorage.setItem('sawaDesignDraft', JSON.stringify(saveData));
+                setTimeout(() => { els.saveDraft.textContent = '✅ تم الحفظ'; setTimeout(()=>els.saveDraft.textContent = '💾 حفظ كمسودة', 2000); }, 500);
+            } catch(e) { alert('عذراً، مساحة التخزين في المتصفح غير كافية لحفظ كل الصور. حاول استخدام مساحة عمل فارغة بصور أقل.'); els.saveDraft.textContent = '💾 حفظ كمسودة'; }
+        }
+
+        async function loadFromLocalStorage() {
+            const dataStr = localStorage.getItem('sawaDesignDraft');
+            if(!dataStr) return alert('لا توجد مسودة محفوظة سابقاً.');
+            
+            try {
+                els.loadDraft.textContent = 'جاري الاستعادة...';
+                const data = JSON.parse(dataStr);
+                
+                // تحميل الصور أولاً باستخدام وعود (Promises)
+                const loadImg = (src) => new Promise(res => { if(!src) return res(null); const i = new Image(); i.onload=()=>res(i); i.src=src; });
+                
+                currentPreviewImage = await loadImg(data.bgImageSrc);
+                
+                const loadedElements = [];
+                for(let el of data.elements) {
+                    if(el.type === 'image' && el.image) { el.image = await loadImg(el.image); }
+                    loadedElements.push(el);
+                }
+
+                // تطبيق البيانات
+                elements = loadedElements;
+                isBlankCanvas = data.isBlankCanvas; canvasBgColor = data.canvasBgColor; bgFilters = data.bgFilters || { bright: 100, cont: 100, saturation: 100, blur: 0 };
+                canvas.width = data.w; canvas.height = data.h;
+                
+                els.bgColor.value = canvasBgColor; els.bgBrightness.value = bgFilters.bright; els.bgContrast.value = bgFilters.cont; els.bgBlur.value = bgFilters.blur;
+                
+                selectedElement = null;
+                historyStack = []; redoStack = []; // تفريغ التاريخ عند الاستعادة
+                
+                enableTools(); updateUI(); drawPreview();
+                setTimeout(() => { els.loadDraft.textContent = '📂 استعادة مسودة'; }, 1000);
+
+            } catch(e) { alert('حدث خطأ أثناء استعادة المسودة.'); els.loadDraft.textContent = '📂 استعادة مسودة'; }
+        }
+
+    </script>
+</body>
+</html>
